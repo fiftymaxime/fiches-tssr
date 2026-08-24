@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fiches pratiques TSSR</title>
+<meta name="description" content="Fiches pratiques techniques — administration systèmes, réseaux et cybersécurité (TSSR).">
+<meta name="color-scheme" content="light dark">
+<style>
+:root {
+  --bg:#f6f8fa; --panel:#fff; --line:#e2e8f0; --tx:#1e293b; --dim:#64748b;
+  --acc:#0e7490; --acc-soft:#ecfeff; --acc-line:#a5f3fc; --shadow:0 1px 2px rgba(15,23,42,.06);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg:#0b1220; --panel:#111c2e; --line:#1e2f47; --tx:#e2e8f0; --dim:#94a3b8;
+    --acc:#22d3ee; --acc-soft:#0d2b33; --acc-line:#155e6b; --shadow:none;
+  }
+}
+* { box-sizing:border-box; }
+html { scroll-behavior:smooth; }
+body {
+  margin:0; background:var(--bg); color:var(--tx);
+  font-family:-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  line-height:1.55; -webkit-text-size-adjust:100%;
+}
+.wrap { max-width:1080px; margin:0 auto; padding:0 20px 72px; }
+header { padding:44px 0 20px; }
+.kicker {
+  display:inline-block; background:var(--acc-soft); color:var(--acc); border:1px solid var(--acc-line);
+  padding:4px 12px; border-radius:20px; font-size:11px; font-weight:700; letter-spacing:1.3px;
+}
+h1 { font-size:clamp(26px,5vw,36px); margin:14px 0 6px; letter-spacing:-.5px; }
+.sub { color:var(--dim); font-size:15px; margin:0; }
+.tools { position:sticky; top:0; z-index:5; background:var(--bg); padding:14px 0 10px; }
+#q {
+  width:100%; padding:13px 16px; font-size:16px; color:var(--tx);
+  background:var(--panel); border:1px solid var(--line); border-radius:10px; outline:none;
+  font-family:inherit; box-shadow:var(--shadow);
+}
+#q:focus { border-color:var(--acc); box-shadow:0 0 0 3px var(--acc-soft); }
+.chips { display:flex; flex-wrap:wrap; gap:7px; margin-top:10px; }
+.chip {
+  font-size:12.5px; color:var(--dim); text-decoration:none; padding:5px 11px;
+  border:1px solid var(--line); border-radius:20px; background:var(--panel); white-space:nowrap;
+}
+.chip:hover { color:var(--acc); border-color:var(--acc-line); }
+.grp { margin-top:34px; scroll-margin-top:130px; }
+.grp h2 {
+  font-size:15px; font-weight:700; letter-spacing:.4px; text-transform:uppercase;
+  color:var(--acc); margin:0 0 14px; display:flex; align-items:center; gap:9px;
+}
+.cnt {
+  font-size:11px; font-weight:700; color:var(--dim); background:var(--panel);
+  border:1px solid var(--line); border-radius:20px; padding:1px 8px; text-transform:none; letter-spacing:0;
+}
+.grid { display:grid; gap:12px; grid-template-columns:repeat(auto-fill,minmax(268px,1fr)); }
+.card {
+  display:flex; flex-direction:column; gap:7px; padding:15px 16px 14px;
+  background:var(--panel); border:1px solid var(--line); border-left:3px solid var(--acc);
+  border-radius:9px; text-decoration:none; color:inherit; box-shadow:var(--shadow);
+  transition:transform .12s ease, border-color .12s ease;
+}
+.card:hover { transform:translateY(-2px); border-color:var(--acc); }
+.tag { font-size:10px; font-weight:700; letter-spacing:1.1px; color:var(--dim); }
+.ttl { font-size:15.5px; font-weight:600; line-height:1.35; }
+.steps { font-size:12px; color:var(--dim); margin-top:auto; }
+.empty { display:none; padding:40px 0; text-align:center; color:var(--dim); }
+body.no-hit .empty { display:block; }
+footer { margin-top:52px; padding-top:18px; border-top:1px solid var(--line); color:var(--dim); font-size:13px; }
+@media print { .tools, footer { display:none; } .card { break-inside:avoid; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <span class="kicker">TSSR · CYBERSÉCURITÉ</span>
+    <h1>Fiches pratiques</h1>
+    <p class="sub">38 procédures pas à pas — administration systèmes, réseaux et sécurité.</p>
+  </header>
+
+  <div class="tools">
+    <input id="q" type="search" placeholder="Rechercher : GPO, VLAN, VPN, Nmap, sauvegarde…" autocomplete="off" aria-label="Rechercher une fiche">
+    <nav class="chips">
+      <a class="chip" href="#windows">Windows Server &amp; Active Directory</a>
+      <a class="chip" href="#reseau">Réseau, pare-feu &amp; VPN</a>
+      <a class="chip" href="#linux">Linux &amp; services</a>
+      <a class="chip" href="#crypto">Chiffrement</a>
+      <a class="chip" href="#soc">SOC, SIEM &amp; détection</a>
+      <a class="chip" href="#audit">Audit &amp; vulnérabilités</a>
+      <a class="chip" href="#supervision">Supervision</a>
+      <a class="chip" href="#virtu">Virtualisation &amp; conteneurs</a>
+      <a class="chip" href="#backup">Sauvegarde &amp; restauration</a>
+    </nav>
+  </div>
+
+    <section class="grp" id="windows" data-n="7">
+      <h2>Windows Server &amp; Active Directory <span class="cnt">7</span></h2>
+      <div class="grid">
+      <a class="card" href="Fiche%20-%20AD%20DS%20DNS%20DHCP%20sur%20Windows%20Server%202022.html" data-k="serveur ad ds / dns / dhcp windows server 2022 ad ds dns dhcp sur windows server 2022 renommer le serveur attribuer une ip fixe installer le rôle ad ds promouvoir en contrôleur de domaine (nouvelle forêt) vérifier ad et dns installer le rôle dhcp autoriser le dhcp dans l&#x27;ad créer une étendue (optionnel) réserver une ip vérifier le dhcp créer une ou et un utilisateur">
+        <span class="tag">WINDOWS SERVER 2022</span>
+        <span class="ttl">Serveur AD DS / DNS / DHCP</span>
+        <span class="steps">11 étapes</span>
+      </a>
+      <a class="card" href="Fiche%20-%20GPO%20essentielles%20de%20securite.html" data-k="gpo essentielles de sécurité windows server · gpo ad gpo essentielles de securite politique de mots de passe (niveau domaine) verrouillage de compte verrouillage session inactive bloquer les périphériques usb de stockage powershell logging (indispensable pour soc/audit) lsa protection (contre vol de credentials type mimikatz) désactiver smbv1 (vulnérable, exploité par eternalblue/wannacry) restreindre ntlm (utiliser kerberos uniquement) appliquer et vérifier">
+        <span class="tag">WINDOWS SERVER · GPO AD</span>
+        <span class="ttl">GPO essentielles de sécurité</span>
+        <span class="steps">9 étapes</span>
+      </a>
+      <a class="card" href="Fiche%20-%20PowerShell%20-%20Import%20massif%20utilisateurs%20AD.html" data-k="powershell – création massive d&#x27;utilisateurs ad depuis un csv windows server · scripting ad powershell - import massif utilisateurs ad préparer le fichier csv créer le script import-users.ps1 exécuter le script vérifier transmettre les mots de passe de manière sécurisée">
+        <span class="tag">WINDOWS SERVER · SCRIPTING AD</span>
+        <span class="ttl">PowerShell – Création massive d&#x27;utilisateurs AD depuis un CSV</span>
+        <span class="steps">5 étapes</span>
+      </a>
+      <a class="card" href="Fiche%20-%20Windows%20LAPS.html" data-k="windows laps – gestion des mots de passe admin locaux windows server · sécurité ad windows laps vérifier la disponibilité étendre le schéma ad déléguer aux ordinateurs l&#x27;écriture de leur propre mot de passe créer la gpo windows laps appliquer et forcer une action laps consulter le mot de passe local d&#x27;un poste forcer une rotation immédiate du mot de passe vérifier">
+        <span class="tag">WINDOWS SERVER · SÉCURITÉ AD</span>
+        <span class="ttl">Windows LAPS – Gestion des mots de passe admin locaux</span>
+        <span class="steps">8 étapes</span>
+      </a>
+      <a class="card" href="Fiche%20-%20ADCS%20-%20AC%20interne%20Windows.html" data-k="adcs — autorité de certification interne windows server · pki adcs - ac interne windows installer le rôle adcs configurer l&#x27;ac racine d&#x27;entreprise publier automatiquement dans l&#x27;ad publier le certificat racine sur tous les postes (gpo) créer un template certificat pour serveur web publier le template demander un certificat depuis un serveur demande via csr (pour serveur linux/appliance) révoquer un certificat vérifications">
+        <span class="tag">WINDOWS SERVER · PKI</span>
+        <span class="ttl">ADCS — Autorité de certification interne</span>
+        <span class="steps">10 étapes</span>
+      </a>
+      <a class="card" href="Fiche%20-%20WSUS%20-%20Deploiement%20et%20GPO%20clients.html" data-k="wsus — serveur de mises à jour interne windows server · patch management wsus - deploiement et gpo clients installer le rôle wsus configuration post-install assistant de configuration initiale attendre la synchronisation initiale créer des groupes d&#x27;ordinateurs approuver des mises à jour (par groupe) gpo client — pointer les postes vers wsus forcer un check wsus côté client vérifier qu&#x27;un poste remonte bien nettoyage régulier (indispensable) rapports">
+        <span class="tag">WINDOWS SERVER · PATCH MANAGEMENT</span>
+        <span class="ttl">WSUS — Serveur de mises à jour interne</span>
+        <span class="steps">11 étapes</span>
+      </a>
+      <a class="card" href="Fiche%20-%20802.1X%20avec%20NPS%20Windows%20Server.html" data-k="802.1x — authentification réseau avec nps windows server · sécurité réseau 802.1x avec nps windows server installer le rôle nps enregistrer nps dans l&#x27;ad ajouter le switch comme client radius créer une stratégie de demande de connexion créer la stratégie réseau (autorisation) configuration radius + aaa activer 802.1x sur les ports d&#x27;accès activer le service wired autoconfig test et troubleshoot">
+        <span class="tag">WINDOWS SERVER · SÉCURITÉ RÉSEAU</span>
+        <span class="ttl">802.1X — Authentification réseau avec NPS</span>
+        <span class="steps">9 étapes</span>
+      </a>
+      </div>
+    </section>
+    <section class="grp" id="reseau" data-n="7">
+      <h2>Réseau, pare-feu &amp; VPN <span class="cnt">7</span></h2>
+      <div class="grid">
+      <a class="card" href="Fiche%20-%20VLAN%20et%20routage%20inter-VLAN%20%28Cisco%29.html" data-k="création de vlan et routage inter-vlan cisco · réseaux vlan et routage inter-vlan (cisco) passer en mode configuration créer et nommer les vlan affecter les ports aux vlan (mode access) (astuce) configurer plusieurs ports d&#x27;un coup configurer le port trunk vers le routeur activer l&#x27;interface physique créer une sous-interface par vlan commandes de contrôle config ip des pc test">
+        <span class="tag">CISCO · RÉSEAUX</span>
+        <span class="ttl">Création de VLAN et routage inter-VLAN</span>
+        <span class="steps">10 étapes</span>
+      </a>
+      <a class="card" href="Fiche%20-%20pfSense%20-%20Regles%20firewall%20NAT%20DMZ.html" data-k="pfsense — règles firewall, nat et dmz pare-feu · pfsense pfsense - regles firewall nat dmz assigner les interfaces accès web et mot de passe admin wan lan dmz (nouvelle interface) règles lan (par défaut : any-to-any autorisé) règles dmz (isolation maximale) port forward (ex : serveur web dmz) sauvegarde de la configuration vérifications">
+        <span class="tag">PARE-FEU · PFSENSE</span>
+        <span class="ttl">pfSense — Règles firewall, NAT et DMZ</span>
+        <span class="steps">10 étapes</span>
+      </a>
+      <a class="card" href="Fiche%20-%20FortiGate%20-%20Setup%20et%20politiques.html" data-k="fortigate — setup initial et politiques pare-feu · fortigate fortigate - setup et politiques connexion console configurer l&#x27;ip de management accès web gui interfaces (via gui) objets réservables (address / service) politique lan → wan (accès internet) politique wan → dmz (publier serveur) isolation dmz ↔ lan sauvegarde config vérifications cli">
+        <span class="tag">PARE-FEU · FORTIGATE</span>
+        <span class="ttl">FortiGate — Setup initial et politiques</span>
+        <span class="steps">10 étapes</span>
+      </a>
+      <a class="card" href="Fiche%20-%20VPN%20IPsec%20site-to-site%20pfSense.html" data-k="vpn ipsec site-à-site (pfsense ↔ pfsense) pfsense · vpn vpn ipsec site-to-site pfsense phase 1 (ike — négociation du tunnel) phase 2 (esp — trafic chiffré) règles pare-feu ipsec activer ipsec répéter en miroir état du tunnel test de bout en bout troubleshoot">
+        <span class="tag">PFSENSE · VPN</span>
+        <span class="ttl">VPN IPsec site-à-site (pfSense ↔ pfSense)</span>
+        <span class="steps">8 étapes</span>
+      </a>
+      <a class="card" href="Fiche%20-%20VPN%20WireGuard.html" data-k="wireguard — vpn moderne linux · vpn vpn wireguard installer wireguard générer les clés serveur créer /etc/wireguard/wg0.conf activer le forwarding ip démarrer le service ouvrir le port dans le pare-feu générer les clés client fichier de conf client client.conf ajouter le peer côté serveur test">
+        <span class="tag">LINUX · VPN</span>
+        <span class="ttl">WireGuard — VPN moderne</span>
+        <span class="steps">10 étapes</span>
+      </a>
+      <a class="card" href="Fiche%20-%20VPN%20OpenVPN.html" data-k="openvpn — serveur + client (script rapide) linux · vpn vpn openvpn installation via script officiel fichier .ovpn du client ajouter un nouveau client révoquer un client vérifier le service voir les clients connectés ouvrir le pare-feu (si pas fait par le script) connexion client logs et troubleshoot">
+        <span class="tag">LINUX · VPN</span>
+        <span class="ttl">OpenVPN — Serveur + client (script rapide)</span>
+        <span class="steps">9 étapes</span>
+      </a>
+      <a class="card" href="Fiche%20-%20Wireshark%20-%20Troubleshoot%20reseau.html" data-k="wireshark — troubleshoot réseau réseau · analyse wireshark - troubleshoot reseau choisir l&#x27;interface de capture capture filter (avant capture — bpf syntax) display filter (après capture) analyser un handshake tcp détecter des retransmissions (lenteurs) latence entre 2 paquets analyser un dns analyser http / https (sni) extraire des fichiers transférés capture depuis un poste sans gui (tshark) capture à distance (ssh + wireshark)">
+        <span class="tag">RÉSEAU · ANALYSE</span>
+        <span class="ttl">Wireshark — Troubleshoot réseau</span>
+        <span class="steps">11 étapes</span>
+      </a>
+      </div>
+    </section>
+    <section class="grp" id="linux" data-n="5">
+      <h2>Linux &amp; services <span class="cnt">5</span></h2>
+      <div class="grid">
+      <a class="card" href="Fiche%20-%20Hardening%20SSH%20sur%20Linux.html" data-k="hardening ssh sur linux linux · sécurité système hardening ssh sur linux sauvegarder la config d&#x27;origine générer une paire de clés (sur le poste client) copier la clé publique sur le serveur tester la connexion par clé (obligatoire avant l&#x27;étape 5) durcir sshd_config recharger ssh et tester dans une nouvelle session ouvrir le nouveau port dans le pare-feu installer et configurer fail2ban vérifier">
+        <span class="tag">LINUX · SÉCURITÉ SYSTÈME</span>
+        <span class="ttl">Hardening SSH sur Linux</span>
+        <span class="steps">9 étapes</span>
+      </a>
+      <a class="card" href="Fiche%20-%20Partage%20SMB%20%28Samba%29%20sur%20Debian.html" data-k="partage smb (samba) sur debian linux · partage fichiers partage smb (samba) sur debian installer samba sauvegarder la config d&#x27;origine créer le dossier à partager éditer smb.conf et déclarer le partage (optionnel) créer un utilisateur samba vérifier la syntaxe et redémarrer ouvrir le pare-feu tester l&#x27;accès">
+        <span class="tag">LINUX · PARTAGE FICHIERS</span>
+        <span class="ttl">Partage SMB (Samba) sur Debian</span>
+        <span class="steps">8 étapes</span>
+      </a>
+      <a class="card" href="Fiche%20-%20Partage%20NFS%20sur%20Debian.html" data-k="partage nfs sur debian linux · partage fichiers partage nfs sur debian installer le serveur nfs créer le dossier à partager déclarer le partage dans /etc/exports appliquer et redémarrer ouvrir le pare-feu installer les outils nfs monter le partage manuellement monter automatiquement au démarrage vérifier">
+        <span class="tag">LINUX · PARTAGE FICHIERS</span>
+        <span class="ttl">Partage NFS sur Debian</span>
+        <span class="steps">9 étapes</span>
+      </a>
+      <a class="card" href="Fiche%20-%20Installation%20GLPI%20sur%20Debian.html" data-k="installation de glpi sur debian debian · application web installation glpi sur debian mettre à jour le système installer apache, mariadb, php + modules sécuriser mariadb créer la base et l&#x27;utilisateur glpi activer les fuseaux horaires (requis par glpi 10) télécharger et extraire glpi attribuer les droits à apache redémarrer apache + activer au démarrage lancer l&#x27;installation navigateur supprimer le fichier d&#x27;installation">
+        <span class="tag">DEBIAN · APPLICATION WEB</span>
+        <span class="ttl">Installation de GLPI sur Debian</span>
+        <span class="steps">10 étapes</span>
+      </a>
+      <a class="card" href="Fiche%20-%20Let%27s%20Encrypt%20avec%20Nginx.html" data-k="let&#x27;s encrypt + nginx linux · web / tls let&#x27;s encrypt avec nginx installer nginx créer un vhost pour ton site vérifier la résolution dns installer certbot demander le certificat (auto-config nginx) vérifier le certificat test de renouvellement (sans réellement renouveler) cron de renouvellement automatique renforcer la conf tls (mozilla intermediate) tester le score tls">
+        <span class="tag">LINUX · WEB / TLS</span>
+        <span class="ttl">Let&#x27;s Encrypt + Nginx</span>
+        <span class="steps">10 étapes</span>
+      </a>
+      </div>
+    </section>
+    <section class="grp" id="crypto" data-n="2">
+      <h2>Chiffrement <span class="cnt">2</span></h2>
+      <div class="grid">
+      <a class="card" href="Fiche%20-%20BitLocker%20avec%20sauvegarde%20AD.html" data-k="bitlocker – chiffrement disque + sauvegarde ad windows · chiffrement endpoint bitlocker avec sauvegarde ad créer une gpo bitlocker appliquer la gpo sur le poste vérifier le tpm activer bitlocker (powershell admin) sauvegarder la clé de récupération dans l&#x27;ad vérifier le statut du chiffrement retrouver la clé dans l&#x27;ad suspendre / reprendre / décrypter">
+        <span class="tag">WINDOWS · CHIFFREMENT ENDPOINT</span>
+        <span class="ttl">BitLocker – Chiffrement disque + sauvegarde AD</span>
+        <span class="steps">8 étapes</span>
+      </a>
+      <a class="card" href="Fiche%20-%20LUKS%20-%20Chiffrement%20disque%20Linux.html" data-k="luks — chiffrement d&#x27;un disque/partition linux linux · chiffrement luks - chiffrement disque linux identifier le disque à chiffrer installer cryptsetup formater le disque en luks ouvrir le conteneur créer le système de fichiers monter et utiliser fermer proprement montage automatique au démarrage utiliser un keyfile (déverrouillage auto) sauvegarder le header luks gérer les passphrases">
+        <span class="tag">LINUX · CHIFFREMENT</span>
+        <span class="ttl">LUKS — Chiffrement d&#x27;un disque/partition Linux</span>
+        <span class="steps">11 étapes</span>
+      </a>
+      </div>
+    </section>
+    <section class="grp" id="soc" data-n="5">
+      <h2>SOC, SIEM &amp; détection <span class="cnt">5</span></h2>
+      <div class="grid">
+      <a class="card" href="Fiche%20-%20Wazuh%20-%20Installation%20et%20agents.html" data-k="wazuh — installation serveur + agents siem · soc wazuh - installation et agents installation via script officiel récupérer les identifiants admin accès dashboard générer les commandes depuis le dashboard installation (powershell admin) vérifier l&#x27;agent côté serveur modifier la config d&#x27;un agent (à distance) rechercher des événements notifications email/slack">
+        <span class="tag">SIEM · SOC</span>
+        <span class="ttl">Wazuh — Installation serveur + agents</span>
+        <span class="steps">9 étapes</span>
+      </a>
+      <a class="card" href="Fiche%20-%20ELK%20Stack%20-%20Setup%20basique.html" data-k="elk stack — setup basique (elasticsearch + kibana + logstash) siem · elk stack elk stack - setup basique ajouter le dépôt elastic installer elasticsearch configurer et démarrer elasticsearch installer kibana générer le token d&#x27;inscription kibana configurer et démarrer kibana installer logstash (pour le parsing) pipeline logstash minimal filebeat côté client (envoi des logs) créer un data view dans kibana">
+        <span class="tag">SIEM · ELK STACK</span>
+        <span class="ttl">ELK Stack — Setup basique (Elasticsearch + Kibana + Logstash)</span>
+        <span class="steps">10 étapes</span>
+      </a>
+      <a class="card" href="Fiche%20-%20Sysmon%20-%20Configuration%20avancee.html" data-k="sysmon — journalisation avancée windows windows · détection soc sysmon - configuration avancee télécharger sysmon télécharger une config de référence installer avec la config vérifier le service consulter les événements mettre à jour la config sans réinstaller événements clés à surveiller forwarder vers un siem (wazuh/elk) désinstaller">
+        <span class="tag">WINDOWS · DÉTECTION SOC</span>
+        <span class="ttl">Sysmon — Journalisation avancée Windows</span>
+        <span class="steps">9 étapes</span>
+      </a>
+      <a class="card" href="Fiche%20-%20Sigma%20rules%20-%20Detection%20SOC.html" data-k="sigma — règles de détection universelles siem · détection sigma rules - detection soc cloner le dépôt sigmahq structure d&#x27;une règle sigma (yaml) installer pysigma + backends convertir une règle vers elk (lucene) convertir vers splunk spl convertir vers wazuh convertir un dossier complet déployer dans le siem tester une détection avec atomic red team écrire sa propre règle">
+        <span class="tag">SIEM · DÉTECTION</span>
+        <span class="ttl">Sigma — Règles de détection universelles</span>
+        <span class="steps">10 étapes</span>
+      </a>
+      <a class="card" href="Fiche%20-%20Wireshark%20-%20Analyse%20securite.html" data-k="wireshark — analyse sécurité (ioc, exfil, c2) forensic · analyse menaces wireshark - analyse securite détecter un scan réseau (syn scan) scan arp (reconnaissance locale) extraire des identifiants en clair extraire des fichiers transférés détecter un beaconing c2 (command &amp; control) analyse dns suspecte analyse tls — sni et ja3 détecter du tunneling (icmp, dns) extraire ioc pour enquête reconstitution d&#x27;une session (http, tls déchiffré si clés dispo) timeline de l&#x27;incident">
+        <span class="tag">FORENSIC · ANALYSE MENACES</span>
+        <span class="ttl">Wireshark — Analyse sécurité (IOC, exfil, C2)</span>
+        <span class="steps">11 étapes</span>
+      </a>
+      </div>
+    </section>
+    <section class="grp" id="audit" data-n="3">
+      <h2>Audit &amp; vulnérabilités <span class="cnt">3</span></h2>
+      <div class="grid">
+      <a class="card" href="Fiche%20-%20Nmap%20-%20Audit%20interne%20reseau.html" data-k="nmap — audit interne réseau audit · reconnaissance nmap - audit interne reseau installer nmap découverte des hôtes actifs (ping sweep) scan rapide des 1000 ports tcp les plus courants scan complet — tous les ports tcp (65535) détection versions + os scan agressif (tout-en-un) scan udp (lent mais essentiel : dns, snmp, ntp) scripts nse — détection de vulnérabilités sauvegarder les résultats (3 formats) post-traitement en html lisible cibles depuis un fichier timing (contrôle de la vitesse)">
+        <span class="tag">AUDIT · RECONNAISSANCE</span>
+        <span class="ttl">Nmap — Audit interne réseau</span>
+        <span class="steps">12 étapes</span>
+      </a>
+      <a class="card" href="Fiche%20-%20Nmap%20-%20Scan%20discret.html" data-k="nmap — scan discret (évasion ids/ips) audit · évasion ids nmap - scan discret syn scan (semi-ouvert, plus discret que tcp connect) timing lent fragmentation des paquets decoys (leurres) port source spécifique (contournement d&#x27;acl) idle scan (via un hôte &quot;zombie&quot;) randomisation des cibles éviter certaines phases mac spoofing combinaison &quot;furtive&quot; complète">
+        <span class="tag">AUDIT · ÉVASION IDS</span>
+        <span class="ttl">Nmap — Scan discret (évasion IDS/IPS)</span>
+        <span class="steps">10 étapes</span>
+      </a>
+      <a class="card" href="Fiche%20-%20Nessus%20-%20Scan%20de%20vulnerabilites.html" data-k="nessus essentials — scan de vulnérabilités audit · vuln management nessus - scan de vulnerabilites télécharger + installer (debian) accéder à l&#x27;interface web attendre l&#x27;initialisation (plugins) nouveau scan configuration du scan lancer et suivre le scan comprendre la criticité (cvss) prioriser via vpr (vulnerability priority rating) exporter le rapport suivi (remédiation) install rapide via docker">
+        <span class="tag">AUDIT · VULN MANAGEMENT</span>
+        <span class="ttl">Nessus Essentials — Scan de vulnérabilités</span>
+        <span class="steps">11 étapes</span>
+      </a>
+      </div>
+    </section>
+    <section class="grp" id="supervision" data-n="3">
+      <h2>Supervision <span class="cnt">3</span></h2>
+      <div class="grid">
+      <a class="card" href="Fiche%20-%20Zabbix%20-%20Serveur%20agent%20triggers.html" data-k="zabbix — serveur, agent, triggers, alertes supervision zabbix - serveur agent triggers ajouter le dépôt zabbix installer serveur + frontend + agent + mariadb créer la base de données config serveur zabbix assistant web agent linux agent windows créer un hôte dans zabbix créer un trigger custom (ex : filesystem &gt; 90%) configurer une alerte email/slack vérifications">
+        <span class="tag">SUPERVISION</span>
+        <span class="ttl">Zabbix — Serveur, agent, triggers, alertes</span>
+        <span class="steps">11 étapes</span>
+      </a>
+      <a class="card" href="Fiche%20-%20Centreon%20-%20Setup%20et%20supervision.html" data-k="centreon — setup et supervision d&#x27;un hôte supervision · centreon centreon - setup et supervision installation depuis l&#x27;iso configuration initiale web login et premiers réglages installer le collecteur (poller) sur les cibles installer l&#x27;agent snmp sur un hôte linux ajouter un hôte dans centreon ajouter des services à surveiller générer et pousser la config vers le poller vérifier la remontée configurer les notifications cartographie temps réel">
+        <span class="tag">SUPERVISION · CENTREON</span>
+        <span class="ttl">Centreon — Setup et supervision d&#x27;un hôte</span>
+        <span class="steps">11 étapes</span>
+      </a>
+      <a class="card" href="Fiche%20-%20Grafana%20%2B%20Prometheus.html" data-k="prometheus + grafana — stack métriques moderne supervision · métriques grafana + prometheus installer prometheus (via docker compose) config prometheus (targets) démarrer la stack installer node_exporter sur chaque cible linux vérifier la collecte prometheus accéder à grafana + ajouter prometheus importer un dashboard prêt requêtes promql utiles configurer une alerte grafana windows exporter (équivalent node_exporter pour windows)">
+        <span class="tag">SUPERVISION · MÉTRIQUES</span>
+        <span class="ttl">Prometheus + Grafana — Stack métriques moderne</span>
+        <span class="steps">10 étapes</span>
+      </a>
+      </div>
+    </section>
+    <section class="grp" id="virtu" data-n="4">
+      <h2>Virtualisation &amp; conteneurs <span class="cnt">4</span></h2>
+      <div class="grid">
+      <a class="card" href="Fiche%20-%20Proxmox%20VE%20-%20Install%20VM%20snapshot.html" data-k="proxmox ve — install, vm, snapshot, backup virtualisation · proxmox proxmox ve - install vm snapshot installer proxmox depuis l&#x27;iso accès web désactiver le repo enterprise + activer no-subscription ajouter un pool de stockage uploader une iso créer une vm snapshot avant intervention risquée restauration d&#x27;un snapshot sauvegarde planifiée (backup job) restauration d&#x27;une sauvegarde cli utile">
+        <span class="tag">VIRTUALISATION · PROXMOX</span>
+        <span class="ttl">Proxmox VE — Install, VM, snapshot, backup</span>
+        <span class="steps">11 étapes</span>
+      </a>
+      <a class="card" href="Fiche%20-%20VMware%20ESXi%20-%20Install%20et%20VM.html" data-k="vmware esxi — install et déploiement d&#x27;une vm virtualisation · vmware vmware esxi - install et vm télécharger l&#x27;iso installer esxi depuis usb config réseau (dcui - console f2) accès web esxi host client créer un datastore (vmfs) uploader une iso créer une vm snapshot installer vmware tools (invité linux) cloner une vm (méthode esxi standalone) ligne de commande utile">
+        <span class="tag">VIRTUALISATION · VMWARE</span>
+        <span class="ttl">VMware ESXi — Install et déploiement d&#x27;une VM</span>
+        <span class="steps">11 étapes</span>
+      </a>
+      <a class="card" href="Fiche%20-%20Hyper-V%20-%20Deployer%20une%20VM.html" data-k="hyper-v — activer, vswitch, vm, snapshot windows · virtualisation hyper-v - deployer une vm prérequis (bios) activer hyper-v (windows server) activer hyper-v (windows 10/11 pro) créer un commutateur virtuel (vswitch) créer une vm (powershell) checkpoint (snapshot) restaurer un checkpoint export / import (déplacer une vm) réplication hyper-v (pra) sauvegarde d&#x27;une vm avec wbadmin commandes utiles">
+        <span class="tag">WINDOWS · VIRTUALISATION</span>
+        <span class="ttl">Hyper-V — Activer, vSwitch, VM, snapshot</span>
+        <span class="steps">11 étapes</span>
+      </a>
+      <a class="card" href="Fiche%20-%20Docker%20-%20Bases.html" data-k="docker — bases opérationnelles containers · docker docker - bases installer docker (debian/ubuntu) vocabulaire minimum lancer un premier conteneur commandes essentielles volumes (persistance) réseaux docker-compose (stack multi-conteneurs) construire une image (dockerfile) push vers un registry nettoyage (à faire régulièrement)">
+        <span class="tag">CONTAINERS · DOCKER</span>
+        <span class="ttl">Docker — Bases opérationnelles</span>
+        <span class="steps">10 étapes</span>
+      </a>
+      </div>
+    </section>
+    <section class="grp" id="backup" data-n="2">
+      <h2>Sauvegarde &amp; restauration <span class="cnt">2</span></h2>
+      <div class="grid">
+      <a class="card" href="Fiche%20-%20Veeam%20-%20Sauvegarde%20et%20restauration%20VM.html" data-k="veeam backup &amp; replication — job vm + restauration sauvegarde · veeam b&amp;r veeam - sauvegarde et restauration vm installer veeam b&amp;r premier lancement ajouter le vcenter ou hôte esxi ajouter un repository de sauvegarde créer un job de sauvegarde restauration - vm complète (instant recovery) restauration granulaire - fichier unique restauration - application item (ad, exchange, sql) surebackup (test automatique de restauration) politique 3-2-1-1-0 configurer un hardened repository (anti-ransomware)">
+        <span class="tag">SAUVEGARDE · VEEAM B&amp;R</span>
+        <span class="ttl">Veeam Backup &amp; Replication — Job VM + restauration</span>
+        <span class="steps">11 étapes</span>
+      </a>
+      <a class="card" href="Fiche%20-%20Sauvegarde%20wbadmin%20et%20rsync.html" data-k="sauvegardes natives — wbadmin (windows) &amp; rsync (linux) sauvegarde · natif os sauvegarde wbadmin et rsync installer la fonctionnalité sauvegarde complète (bare metal) sauvegarde de dossiers spécifiques planifier une sauvegarde quotidienne lister les sauvegardes disponibles restaurer un fichier restaurer un système complet (bare metal recovery) installation sauvegarde simple sauvegarde incrémentale économe (--link-dest) rotation automatique (garder 7/4/3) script complet + cron restauration">
+        <span class="tag">SAUVEGARDE · NATIF OS</span>
+        <span class="ttl">Sauvegardes natives — wbadmin (Windows) &amp; rsync (Linux)</span>
+        <span class="steps">13 étapes</span>
+      </a>
+      </div>
+    </section>
+
+  <p class="empty">Aucune fiche ne correspond à cette recherche.</p>
+
+  <footer>Notes personnelles de formation — à vérifier avant toute mise en production.</footer>
+</div>
+
+<script>
+(function () {
+  var q = document.getElementById('q');
+  var cards = [].slice.call(document.querySelectorAll('.card'));
+  var groups = [].slice.call(document.querySelectorAll('.grp'));
+  var norm = function (s) {
+    return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  };
+  cards.forEach(function (c) { c.dataset.n = norm(c.dataset.k); });
+
+  function run() {
+    var terms = norm(q.value).split(/\s+/).filter(Boolean);
+    var hits = 0;
+    cards.forEach(function (c) {
+      var ok = terms.every(function (t) { return c.dataset.n.indexOf(t) > -1; });
+      c.style.display = ok ? '' : 'none';
+      if (ok) hits++;
+    });
+    groups.forEach(function (g) {
+      var vis = [].slice.call(g.querySelectorAll('.card')).some(function (c) {
+        return c.style.display !== 'none';
+      });
+      g.style.display = vis ? '' : 'none';
+    });
+    document.body.classList.toggle('no-hit', hits === 0);
+  }
+
+  q.addEventListener('input', run);
+  q.addEventListener('keydown', function (e) { if (e.key === 'Escape') { q.value = ''; run(); } });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === '/' && document.activeElement !== q) { e.preventDefault(); q.focus(); }
+  });
+  run();
+})();
+</script>
+</body>
+</html>

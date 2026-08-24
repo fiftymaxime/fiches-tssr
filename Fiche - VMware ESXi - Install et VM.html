@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="UTF-8"><title>Fiche - VMware ESXi</title>
+<style>
+* { box-sizing: border-box; }
+body { font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  max-width: 820px; margin: 32px auto; padding: 0 26px;
+  background: #fff; color: #1e293b; line-height: 1.6; }
+.cat { display: inline-block; background: #0891b2; color: #fff; padding: 5px 14px;
+  border-radius: 20px; font-size: 11px; font-weight: 700; letter-spacing: 1.2px; }
+h1 { color: #0e7490; font-size: 26px; font-weight: 700; margin: 12px 0 24px; }
+h2 { color: #0e7490; font-size: 17px; font-weight: 600;
+  margin: 28px 0 8px; padding-bottom: 6px; border-bottom: 1px solid #cffafe; }
+h2 .n { display: inline-block; background: #ecfeff; color: #0e7490;
+  width: 26px; height: 26px; line-height: 26px; text-align: center;
+  border-radius: 50%; font-size: 13px; margin-right: 8px; }
+p { margin: 6px 0; }
+pre { background: #f8fafc; color: #0f172a; border-left: 3px solid #0891b2;
+  padding: 12px 16px; border-radius: 4px; overflow-x: auto; font-size: 13.5px;
+  font-family: "Consolas", "Monaco", monospace; line-height: 1.55; margin: 10px 0; }
+pre .c { color: #64748b; font-style: italic; }
+pre .k { color: #0891b2; font-weight: 600; }
+code.i { background: #ecfeff; color: #0e7490; padding: 2px 6px;
+  border-radius: 3px; font-family: "Consolas", monospace; font-size: 90%; }
+.warn { background: #fef2f2; border-left: 4px solid #dc2626; padding: 10px 14px;
+  border-radius: 4px; color: #7f1d1d; font-size: 14px; margin: 12px 0; }
+.warn strong { color: #991b1b; }
+</style></head><body>
+
+<span class="cat">VIRTUALISATION &middot; VMWARE</span>
+<h1>VMware ESXi — Install et déploiement d'une VM</h1>
+
+<h2><span class="n">1</span>Télécharger l'ISO</h2>
+<pre>Compte Broadcom (ex-VMware) requis :
+  https://support.broadcom.com/group/ecx/downloads
+  → VMware vSphere Hypervisor (ESXi 8.x)</pre>
+
+<h2><span class="n">2</span>Installer ESXi depuis USB</h2>
+<pre>Créer clé USB avec Rufus (mode DD)
+Boot serveur sur USB → assistant :
+  License agreement                    : F11
+  Disque cible                         : (choisir le SSD dédié, pas de RAID logiciel)
+  Root password
+Reboot</pre>
+
+<h2><span class="n">3</span>Config réseau (DCUI - console F2)</h2>
+<pre>Login root → Configure Management Network
+  IPv4          : IP fixe 192.168.1.30 / 24 / GW 192.168.1.1
+  DNS           : 192.168.1.10, 1.1.1.1
+  Hostname      : esxi01.monlab.local
+
+Restart Management Network (Y)</pre>
+
+<h2><span class="n">4</span>Accès web ESXi Host Client</h2>
+<pre>https://192.168.1.30
+Login : root / (mot de passe défini)</pre>
+
+<h2><span class="n">5</span>Créer un datastore (VMFS)</h2>
+<pre>Storage → Datastores → New datastore → Create new VMFS
+  Nom       : datastore-vm
+  Disque    : SSD 1 To
+  Partition : 100% VMFS6</pre>
+
+<h2><span class="n">6</span>Uploader une ISO</h2>
+<pre>Storage → Datastores → datastore-vm → Datastore browser
+  → New directory : ISO
+  → Upload → sélectionner debian-12.iso</pre>
+
+<h2><span class="n">7</span>Créer une VM</h2>
+<pre>Virtual Machines → Create/Register VM → Create new VM
+
+Name : srv-web-01
+Compatibility : ESXi 8.0 U2
+Guest OS family : Linux
+Guest OS version : Debian GNU/Linux 12
+
+Storage      : datastore-vm
+CPU          : 2 cores
+Memory       : 4 GB, cocher "Reserve all guest memory" si prod
+Hard disk    : 60 GB, Thin provisioned
+Network      : VM Network (VMXNET3)
+CD/DVD Drive : Datastore ISO file → /ISO/debian-12.iso, cocher "Connect at power on"
+Finish → Power on</pre>
+
+<h2><span class="n">8</span>Snapshot</h2>
+<pre>Clic droit VM → Snapshots → Take snapshot
+  Name : avant-maj-kernel
+  ✔ Snapshot the virtual machine's memory
+  ✔ Quiesce guest file system (si VMware Tools installés)</pre>
+
+<h2><span class="n">9</span>Installer VMware Tools (invité Linux)</h2>
+<pre><span class="k">sudo</span> apt install open-vm-tools -y
+<span class="k">sudo</span> systemctl enable --now open-vm-tools</pre>
+
+<h2><span class="n">10</span>Cloner une VM (méthode ESXi standalone)</h2>
+<pre><span class="c"># Sur ESXi (SSH activé)</span>
+<span class="k">cd</span> /vmfs/volumes/datastore-vm
+<span class="k">mkdir</span> srv-web-02
+vmkfstools -i srv-web-01/srv-web-01.vmdk srv-web-02/srv-web-02.vmdk -d thin
+<span class="c"># Recréer la VM en pointant sur le nouveau vmdk</span></pre>
+
+<h2><span class="n">11</span>Ligne de commande utile</h2>
+<pre><span class="k">esxcli</span> vm process list                          <span class="c"># VM en cours</span>
+<span class="k">esxcli</span> vm process kill --type=soft -w &lt;WorldID&gt;  <span class="c"># kill propre</span>
+<span class="k">esxcli</span> hardware cpu list
+<span class="k">esxcli</span> storage vmfs extent list
+<span class="k">esxcli</span> network nic list
+vim-cmd vmsvc/getallvms</pre>
+
+<div class="warn">
+<strong>LICENCE</strong> — Depuis Broadcom, la version <em>Free ESXi</em> a été discontinuée puis réintroduite en 2025 pour usage non-commercial. Vérifier la licence appliquée : <em>Manage → Licensing</em>. Sans licence valide, l'hôte se met en mode évaluation puis se bloque au bout de 60 jours.
+</div>
+
+</body></html>

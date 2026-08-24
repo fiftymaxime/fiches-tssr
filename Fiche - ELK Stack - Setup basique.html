@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="UTF-8"><title>Fiche - ELK Stack</title>
+<style>
+* { box-sizing: border-box; }
+body { font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  max-width: 820px; margin: 32px auto; padding: 0 26px;
+  background: #fff; color: #1e293b; line-height: 1.6; }
+.cat { display: inline-block; background: #0891b2; color: #fff; padding: 5px 14px;
+  border-radius: 20px; font-size: 11px; font-weight: 700; letter-spacing: 1.2px; }
+h1 { color: #0e7490; font-size: 26px; font-weight: 700; margin: 12px 0 24px; }
+h2 { color: #0e7490; font-size: 17px; font-weight: 600;
+  margin: 28px 0 8px; padding-bottom: 6px; border-bottom: 1px solid #cffafe; }
+h2 .n { display: inline-block; background: #ecfeff; color: #0e7490;
+  width: 26px; height: 26px; line-height: 26px; text-align: center;
+  border-radius: 50%; font-size: 13px; margin-right: 8px; }
+h3 { color: #0891b2; font-size: 14px; font-weight: 600;
+  margin: 26px 0 6px; text-transform: uppercase; letter-spacing: 0.8px; }
+p { margin: 6px 0; }
+pre { background: #f8fafc; color: #0f172a; border-left: 3px solid #0891b2;
+  padding: 12px 16px; border-radius: 4px; overflow-x: auto; font-size: 13.5px;
+  font-family: "Consolas", "Monaco", monospace; line-height: 1.55; margin: 10px 0; }
+pre .c { color: #64748b; font-style: italic; }
+pre .k { color: #0891b2; font-weight: 600; }
+code.i { background: #ecfeff; color: #0e7490; padding: 2px 6px;
+  border-radius: 3px; font-family: "Consolas", monospace; font-size: 90%; }
+.warn { background: #fef2f2; border-left: 4px solid #dc2626; padding: 10px 14px;
+  border-radius: 4px; color: #7f1d1d; font-size: 14px; margin: 12px 0; }
+.warn strong { color: #991b1b; }
+</style></head><body>
+
+<span class="cat">SIEM &middot; ELK STACK</span>
+<h1>ELK Stack — Setup basique (Elasticsearch + Kibana + Logstash)</h1>
+
+<p>Cible : VM Debian 12, 4 vCPU / 8 Go RAM / 100 Go. Installation par paquets Elastic.</p>
+
+<h2><span class="n">1</span>Ajouter le dépôt Elastic</h2>
+<pre><span class="k">sudo</span> apt install -y apt-transport-https gnupg
+<span class="k">wget</span> -qO - https://artifacts.elastic.co/GPG-KEY-elasticsearch | <span class="k">sudo</span> gpg --dearmor -o /usr/share/keyrings/elastic.gpg
+<span class="k">echo</span> "deb [signed-by=/usr/share/keyrings/elastic.gpg] https://artifacts.elastic.co/packages/8.x/apt stable main" | \
+  <span class="k">sudo</span> tee /etc/apt/sources.list.d/elastic-8.x.list
+<span class="k">sudo</span> apt update</pre>
+
+<h2><span class="n">2</span>Installer Elasticsearch</h2>
+<pre><span class="k">sudo</span> apt install elasticsearch -y</pre>
+<p>Noter le mot de passe généré pour <code class="i">elastic</code>. Sinon le régénérer :</p>
+<pre><span class="k">sudo</span> /usr/share/elasticsearch/bin/elasticsearch-reset-password -u elastic</pre>
+
+<h2><span class="n">3</span>Configurer et démarrer Elasticsearch</h2>
+<pre><span class="k">sudo</span> nano /etc/elasticsearch/elasticsearch.yml
+
+network.host: 0.0.0.0
+http.port: 9200
+discovery.type: single-node
+
+<span class="k">sudo</span> systemctl enable --now elasticsearch
+<span class="k">curl</span> -k -u elastic https://localhost:9200</pre>
+
+<h2><span class="n">4</span>Installer Kibana</h2>
+<pre><span class="k">sudo</span> apt install kibana -y</pre>
+
+<h2><span class="n">5</span>Générer le token d'inscription Kibana</h2>
+<pre><span class="k">sudo</span> /usr/share/elasticsearch/bin/elasticsearch-create-enrollment-token -s kibana</pre>
+
+<h2><span class="n">6</span>Configurer et démarrer Kibana</h2>
+<pre><span class="k">sudo</span> nano /etc/kibana/kibana.yml
+
+server.host: "0.0.0.0"
+server.port: 5601
+
+<span class="k">sudo</span> systemctl enable --now kibana</pre>
+<p>Accéder à <code class="i">http://IP_ELK:5601</code>, coller le token, puis récupérer le code de vérification :</p>
+<pre><span class="k">sudo</span> /usr/share/kibana/bin/kibana-verification-code</pre>
+
+<h2><span class="n">7</span>Installer Logstash (pour le parsing)</h2>
+<pre><span class="k">sudo</span> apt install logstash -y</pre>
+
+<h2><span class="n">8</span>Pipeline Logstash minimal</h2>
+<pre><span class="k">sudo</span> nano /etc/logstash/conf.d/syslog.conf
+
+input {
+  beats { port =&gt; 5044 }
+}
+
+filter {
+  if [event][module] == "system" {
+    grok { match =&gt; { "message" =&gt; "%{SYSLOGBASE} %{GREEDYDATA:msg}" } }
+  }
+}
+
+output {
+  elasticsearch {
+    hosts    =&gt; ["https://localhost:9200"]
+    user     =&gt; "elastic"
+    password =&gt; "MotDePasse"
+    ssl_certificate_verification =&gt; false
+    index    =&gt; "logs-%{+YYYY.MM.dd}"
+  }
+}
+
+<span class="k">sudo</span> systemctl enable --now logstash</pre>
+
+<h2><span class="n">9</span>Filebeat côté client (envoi des logs)</h2>
+<pre><span class="c"># Sur chaque serveur/poste à monitorer</span>
+<span class="k">sudo</span> apt install filebeat -y
+<span class="k">sudo</span> nano /etc/filebeat/filebeat.yml
+
+output.logstash:
+  hosts: ["IP_ELK:5044"]
+
+<span class="k">sudo</span> filebeat modules enable system
+<span class="k">sudo</span> systemctl enable --now filebeat</pre>
+
+<h2><span class="n">10</span>Créer un Data View dans Kibana</h2>
+<pre>Kibana → Discover → Create data view
+  Name  : logs-*
+  Time field : @timestamp</pre>
+
+<div class="warn">
+<strong>SÉCURITÉ</strong> — L'installation par défaut a le TLS activé (bien) mais avec un certificat auto-signé. En production, remplacer par un certificat émis par une AC interne ou publique.
+</div>
+
+</body></html>

@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="UTF-8"><title>Fiche - Sysmon</title>
+<style>
+* { box-sizing: border-box; }
+body { font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  max-width: 820px; margin: 32px auto; padding: 0 26px;
+  background: #fff; color: #1e293b; line-height: 1.6; }
+.cat { display: inline-block; background: #0891b2; color: #fff; padding: 5px 14px;
+  border-radius: 20px; font-size: 11px; font-weight: 700; letter-spacing: 1.2px; }
+h1 { color: #0e7490; font-size: 26px; font-weight: 700; margin: 12px 0 24px; }
+h2 { color: #0e7490; font-size: 17px; font-weight: 600;
+  margin: 28px 0 8px; padding-bottom: 6px; border-bottom: 1px solid #cffafe; }
+h2 .n { display: inline-block; background: #ecfeff; color: #0e7490;
+  width: 26px; height: 26px; line-height: 26px; text-align: center;
+  border-radius: 50%; font-size: 13px; margin-right: 8px; }
+p { margin: 6px 0; }
+pre { background: #f8fafc; color: #0f172a; border-left: 3px solid #0891b2;
+  padding: 12px 16px; border-radius: 4px; overflow-x: auto; font-size: 13.5px;
+  font-family: "Consolas", "Monaco", monospace; line-height: 1.55; margin: 10px 0; }
+pre .c { color: #64748b; font-style: italic; }
+pre .k { color: #0891b2; font-weight: 600; }
+code.i { background: #ecfeff; color: #0e7490; padding: 2px 6px;
+  border-radius: 3px; font-family: "Consolas", monospace; font-size: 90%; }
+.warn { background: #fef2f2; border-left: 4px solid #dc2626; padding: 10px 14px;
+  border-radius: 4px; color: #7f1d1d; font-size: 14px; margin: 12px 0; }
+.warn strong { color: #991b1b; }
+</style></head><body>
+
+<span class="cat">WINDOWS &middot; DÉTECTION SOC</span>
+<h1>Sysmon — Journalisation avancée Windows</h1>
+
+<p>Sysmon (Sysinternals) enrichit massivement les événements Windows pour la détection : création de processus, connexions réseau, modifications registre, hash de fichiers, etc.</p>
+
+<h2><span class="n">1</span>Télécharger Sysmon</h2>
+<pre>Invoke-WebRequest -Uri https://download.sysinternals.com/files/Sysmon.zip `
+  -OutFile C:\Temp\Sysmon.zip
+Expand-Archive C:\Temp\Sysmon.zip -DestinationPath C:\Temp\Sysmon</pre>
+
+<h2><span class="n">2</span>Télécharger une config de référence</h2>
+<pre><span class="c"># SwiftOnSecurity - config équilibrée, très utilisée en entreprise</span>
+Invoke-WebRequest `
+  -Uri https://raw.githubusercontent.com/SwiftOnSecurity/sysmon-config/master/sysmonconfig-export.xml `
+  -OutFile C:\Temp\Sysmon\sysmonconfig.xml
+
+<span class="c"># Alternative encore plus complète : Olaf Hartong (modulaire)</span>
+<span class="c"># https://github.com/olafhartong/sysmon-modular</span></pre>
+
+<h2><span class="n">3</span>Installer avec la config</h2>
+<pre><span class="k">cd</span> C:\Temp\Sysmon
+.\Sysmon64.exe -accepteula -i C:\Temp\Sysmon\sysmonconfig.xml</pre>
+
+<h2><span class="n">4</span>Vérifier le service</h2>
+<pre>Get-Service Sysmon64
+.\Sysmon64.exe -c        <span class="c"># voir la config chargée</span></pre>
+
+<h2><span class="n">5</span>Consulter les événements</h2>
+<pre>Observateur d'événements → Journaux des applications et des services
+  → Microsoft → Windows → Sysmon → Operational
+
+<span class="c"># En PowerShell - derniers processus créés (EventID 1)</span>
+Get-WinEvent -LogName "Microsoft-Windows-Sysmon/Operational" `
+  -FilterXPath "*[System[EventID=1]]" -MaxEvents 20 |
+  Select-Object TimeCreated,
+    @{n='Image';e={$_.Properties[4].Value}},
+    @{n='CommandLine';e={$_.Properties[10].Value}}</pre>
+
+<h2><span class="n">6</span>Mettre à jour la config sans réinstaller</h2>
+<pre>.\Sysmon64.exe -c C:\Temp\Sysmon\sysmonconfig.xml</pre>
+
+<h2><span class="n">7</span>Événements clés à surveiller</h2>
+<pre>EventID 1  : Process Creation             <span class="c"># démarrage d'un processus</span>
+EventID 3  : Network Connection            <span class="c"># connexion réseau sortante</span>
+EventID 7  : Image Loaded (DLL)            <span class="c"># DLL chargée dans un process</span>
+EventID 10 : Process Access                <span class="c"># ex : Mimikatz ouvre LSASS</span>
+EventID 11 : File Created
+EventID 12/13/14 : Registry
+EventID 22 : DNS Query
+EventID 25 : Process Tampering             <span class="c"># process hollowing</span></pre>
+
+<h2><span class="n">8</span>Forwarder vers un SIEM (Wazuh/ELK)</h2>
+<pre><span class="c"># Wazuh - ajouter dans ossec.conf de l'agent</span>
+&lt;localfile&gt;
+  &lt;location&gt;Microsoft-Windows-Sysmon/Operational&lt;/location&gt;
+  &lt;log_format&gt;eventchannel&lt;/log_format&gt;
+&lt;/localfile&gt;
+
+<span class="c"># Winlogbeat (ELK) - winlogbeat.yml</span>
+winlogbeat.event_logs:
+  - name: Microsoft-Windows-Sysmon/Operational</pre>
+
+<h2><span class="n">9</span>Désinstaller</h2>
+<pre>.\Sysmon64.exe -u force</pre>
+
+<div class="warn">
+<strong>VOLUME DE LOGS</strong> — Une config Sysmon non filtrée peut générer plusieurs Go/jour par poste. Toujours partir d'une config maintenue (SwiftOnSecurity/Hartong) plutôt que de la config par défaut.
+</div>
+
+</body></html>

@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Fiche - VLAN et routage inter-VLAN (Cisco)</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    max-width: 820px; margin: 32px auto; padding: 0 26px;
+    background: #ffffff; color: #1e293b; line-height: 1.6;
+  }
+  .cat {
+    display: inline-block; background: #0891b2; color: #fff;
+    padding: 5px 14px; border-radius: 20px;
+    font-size: 11px; font-weight: 700; letter-spacing: 1.2px;
+  }
+  h1 {
+    color: #0e7490; font-size: 26px; font-weight: 700;
+    margin: 12px 0 24px;
+  }
+  h2 {
+    color: #0e7490; font-size: 17px; font-weight: 600;
+    margin: 28px 0 8px; padding-bottom: 6px;
+    border-bottom: 1px solid #cffafe;
+  }
+  h2 .n {
+    display: inline-block; background: #ecfeff; color: #0e7490;
+    width: 26px; height: 26px; line-height: 26px; text-align: center;
+    border-radius: 50%; font-size: 13px; margin-right: 8px;
+  }
+  h3 {
+    color: #0891b2; font-size: 14px; font-weight: 600;
+    margin: 26px 0 6px; text-transform: uppercase; letter-spacing: 0.8px;
+  }
+  p { margin: 6px 0; }
+  pre {
+    background: #f8fafc; color: #0f172a;
+    border-left: 3px solid #0891b2;
+    padding: 12px 16px; border-radius: 4px;
+    overflow-x: auto; font-size: 13.5px;
+    font-family: "Consolas", "Monaco", "Courier New", monospace;
+    line-height: 1.55; margin: 10px 0;
+  }
+  pre .c { color: #64748b; font-style: italic; }
+  pre .k { color: #0891b2; font-weight: 600; }
+  code.i {
+    background: #ecfeff; color: #0e7490; padding: 2px 6px;
+    border-radius: 3px; font-family: "Consolas", monospace; font-size: 90%;
+  }
+  .warn {
+    background: #fef2f2; border-left: 4px solid #dc2626;
+    padding: 10px 14px; border-radius: 4px;
+    color: #7f1d1d; font-size: 14px; margin: 12px 0;
+  }
+  .warn strong { color: #991b1b; }
+  table.plan { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 14px; }
+  table.plan th, table.plan td {
+    padding: 8px 12px; border: 1px solid #e2e8f0; text-align: left;
+  }
+  table.plan th { background: #ecfeff; color: #0e7490; font-weight: 600; }
+</style>
+</head>
+<body>
+
+<span class="cat">CISCO &middot; RÉSEAUX</span>
+<h1>Création de VLAN et routage inter-VLAN</h1>
+
+<p>Configuration type Router-on-a-Stick (routeur avec sous-interfaces 802.1Q).</p>
+
+<table class="plan">
+  <tr><th>Service</th><th>VLAN</th><th>Réseau</th><th>Passerelle</th></tr>
+  <tr><td>Compta</td><td>10</td><td>192.168.10.0/24</td><td>192.168.10.254</td></tr>
+  <tr><td>Informatique</td><td>20</td><td>192.168.20.0/24</td><td>192.168.20.254</td></tr>
+</table>
+
+<h3>Sur le SWITCH</h3>
+
+<h2><span class="n">1</span>Passer en mode configuration</h2>
+<pre><span class="k">enable</span>
+<span class="k">configure terminal</span></pre>
+
+<h2><span class="n">2</span>Créer et nommer les VLAN</h2>
+<pre><span class="k">vlan</span> 10
+ <span class="k">name</span> COMPTA
+ <span class="k">exit</span>
+
+<span class="k">vlan</span> 20
+ <span class="k">name</span> INFORMATIQUE
+ <span class="k">exit</span></pre>
+
+<h2><span class="n">3</span>Affecter les ports aux VLAN (mode access)</h2>
+<pre><span class="k">interface</span> fastEthernet 0/1
+ <span class="k">switchport mode</span> access
+ <span class="k">switchport access vlan</span> 10
+ <span class="k">exit</span>
+
+<span class="k">interface</span> fastEthernet 0/2
+ <span class="k">switchport mode</span> access
+ <span class="k">switchport access vlan</span> 20
+ <span class="k">exit</span></pre>
+
+<h2><span class="n">4</span>(Astuce) Configurer plusieurs ports d'un coup</h2>
+<pre><span class="k">interface range</span> fastEthernet 0/3 - 10
+ <span class="k">switchport mode</span> access
+ <span class="k">switchport access vlan</span> 10
+ <span class="k">exit</span></pre>
+
+<h2><span class="n">5</span>Configurer le port trunk vers le routeur</h2>
+<pre><span class="k">interface</span> fastEthernet 0/24
+ <span class="k">switchport mode</span> trunk
+ <span class="k">switchport trunk allowed vlan</span> 10,20
+ <span class="k">exit</span>
+
+<span class="k">end</span>
+<span class="k">write memory</span></pre>
+
+<h3>Sur le ROUTEUR</h3>
+
+<h2><span class="n">6</span>Activer l'interface physique</h2>
+<pre><span class="k">enable</span>
+<span class="k">configure terminal</span>
+
+<span class="k">interface</span> gigabitEthernet 0/0
+ <span class="k">no shutdown</span>
+ <span class="k">exit</span></pre>
+
+<h2><span class="n">7</span>Créer une sous-interface par VLAN</h2>
+<pre><span class="k">interface</span> gigabitEthernet 0/0.10
+ <span class="k">encapsulation dot1Q</span> 10
+ <span class="k">ip address</span> 192.168.10.254 255.255.255.0
+ <span class="k">exit</span>
+
+<span class="k">interface</span> gigabitEthernet 0/0.20
+ <span class="k">encapsulation dot1Q</span> 20
+ <span class="k">ip address</span> 192.168.20.254 255.255.255.0
+ <span class="k">exit</span>
+
+<span class="k">end</span>
+<span class="k">write memory</span></pre>
+
+<h3>Vérifications</h3>
+
+<h2><span class="n">8</span>Commandes de contrôle</h2>
+<pre><span class="c"># Sur le switch</span>
+<span class="k">show vlan brief</span>
+<span class="k">show interfaces trunk</span>
+
+<span class="c"># Sur le routeur</span>
+<span class="k">show ip interface brief</span>
+<span class="k">show ip route</span></pre>
+
+<h2><span class="n">9</span>Config IP des PC</h2>
+<pre><span class="c">PC1 (VLAN 10)</span>          <span class="c">PC2 (VLAN 20)</span>
+IP        : 192.168.10.1  IP        : 192.168.20.1
+Masque    : 255.255.255.0 Masque    : 255.255.255.0
+Passerelle: 192.168.10.254 Passerelle: 192.168.20.254</pre>
+
+<h2><span class="n">10</span>Test</h2>
+<pre>PC1&gt; ping 192.168.20.1     <span class="c"># doit répondre</span>
+PC1&gt; ping 192.168.10.254   <span class="c"># passerelle</span></pre>
+
+<div class="warn">
+<strong>PIÈGE COURANT</strong> — Oublier la passerelle sur le PC : le poste ne peut jamais joindre un autre VLAN. Vérifier aussi que le pare-feu Windows du PC cible autorise l'ICMP.
+</div>
+
+</body>
+</html>

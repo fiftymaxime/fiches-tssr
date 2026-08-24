@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="UTF-8"><title>Fiche - WireGuard</title>
+<style>
+* { box-sizing: border-box; }
+body { font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  max-width: 820px; margin: 32px auto; padding: 0 26px;
+  background: #fff; color: #1e293b; line-height: 1.6; }
+.cat { display: inline-block; background: #0891b2; color: #fff; padding: 5px 14px;
+  border-radius: 20px; font-size: 11px; font-weight: 700; letter-spacing: 1.2px; }
+h1 { color: #0e7490; font-size: 26px; font-weight: 700; margin: 12px 0 24px; }
+h2 { color: #0e7490; font-size: 17px; font-weight: 600;
+  margin: 28px 0 8px; padding-bottom: 6px; border-bottom: 1px solid #cffafe; }
+h2 .n { display: inline-block; background: #ecfeff; color: #0e7490;
+  width: 26px; height: 26px; line-height: 26px; text-align: center;
+  border-radius: 50%; font-size: 13px; margin-right: 8px; }
+h3 { color: #0891b2; font-size: 14px; font-weight: 600;
+  margin: 26px 0 6px; text-transform: uppercase; letter-spacing: 0.8px; }
+p { margin: 6px 0; }
+pre { background: #f8fafc; color: #0f172a; border-left: 3px solid #0891b2;
+  padding: 12px 16px; border-radius: 4px; overflow-x: auto; font-size: 13.5px;
+  font-family: "Consolas", "Monaco", monospace; line-height: 1.55; margin: 10px 0; }
+pre .c { color: #64748b; font-style: italic; }
+pre .k { color: #0891b2; font-weight: 600; }
+code.i { background: #ecfeff; color: #0e7490; padding: 2px 6px;
+  border-radius: 3px; font-family: "Consolas", monospace; font-size: 90%; }
+.warn { background: #fef2f2; border-left: 4px solid #dc2626; padding: 10px 14px;
+  border-radius: 4px; color: #7f1d1d; font-size: 14px; margin: 12px 0; }
+.warn strong { color: #991b1b; }
+</style></head><body>
+
+<span class="cat">LINUX &middot; VPN</span>
+<h1>WireGuard — VPN moderne</h1>
+
+<h3>Serveur (Debian)</h3>
+
+<h2><span class="n">1</span>Installer WireGuard</h2>
+<pre><span class="k">sudo</span> apt update
+<span class="k">sudo</span> apt install wireguard -y</pre>
+
+<h2><span class="n">2</span>Générer les clés serveur</h2>
+<pre><span class="k">cd</span> /etc/wireguard
+<span class="k">sudo</span> sh -c 'umask 077; wg genkey | tee server_priv | wg pubkey &gt; server_pub'
+<span class="k">sudo</span> cat server_priv server_pub</pre>
+
+<h2><span class="n">3</span>Créer <code class="i">/etc/wireguard/wg0.conf</code></h2>
+<pre>[Interface]
+Address = 10.10.0.1/24
+ListenPort = 51820
+PrivateKey = &lt;contenu de server_priv&gt;
+
+<span class="c"># NAT sortant vers Internet</span>
+PostUp   = iptables -A FORWARD -i wg0 -j ACCEPT; iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
+PostDown = iptables -D FORWARD -i wg0 -j ACCEPT; iptables -t nat -D POSTROUTING -o eth0 -j MASQUERADE
+
+<span class="c"># Un [Peer] par client (ajouter après création des clés client)</span>
+[Peer]
+PublicKey  = &lt;pubkey client 1&gt;
+AllowedIPs = 10.10.0.2/32</pre>
+
+<h2><span class="n">4</span>Activer le forwarding IP</h2>
+<pre><span class="k">sudo</span> sed -i 's/^#net.ipv4.ip_forward=1/net.ipv4.ip_forward=1/' /etc/sysctl.conf
+<span class="k">sudo</span> sysctl -p</pre>
+
+<h2><span class="n">5</span>Démarrer le service</h2>
+<pre><span class="k">sudo</span> systemctl enable --now wg-quick@wg0
+<span class="k">sudo</span> systemctl status wg-quick@wg0
+<span class="k">sudo</span> wg show</pre>
+
+<h2><span class="n">6</span>Ouvrir le port dans le pare-feu</h2>
+<pre><span class="k">sudo</span> ufw allow 51820/udp</pre>
+
+<h3>Client</h3>
+
+<h2><span class="n">7</span>Générer les clés client</h2>
+<pre>wg genkey | tee client_priv | wg pubkey &gt; client_pub</pre>
+
+<h2><span class="n">8</span>Fichier de conf client <code class="i">client.conf</code></h2>
+<pre>[Interface]
+PrivateKey = &lt;contenu de client_priv&gt;
+Address    = 10.10.0.2/32
+DNS        = 1.1.1.1
+
+[Peer]
+PublicKey           = &lt;server_pub&gt;
+Endpoint            = IP_PUBLIQUE_SERVEUR:51820
+AllowedIPs          = 0.0.0.0/0        <span class="c"># tout le trafic passe par VPN</span>
+PersistentKeepalive = 25</pre>
+
+<h2><span class="n">9</span>Ajouter le peer côté serveur</h2>
+<pre>Éditer /etc/wireguard/wg0.conf et ajouter :
+[Peer]
+PublicKey  = &lt;client_pub&gt;
+AllowedIPs = 10.10.0.2/32
+
+<span class="k">sudo</span> systemctl restart wg-quick@wg0</pre>
+
+<h2><span class="n">10</span>Test</h2>
+<pre><span class="c"># Sur le client (Linux)</span>
+<span class="k">sudo</span> wg-quick up ./client.conf
+ping 10.10.0.1
+curl ifconfig.me  <span class="c"># doit afficher l'IP publique du serveur</span>
+
+<span class="c"># App officielle sur Windows/macOS/iOS/Android : "WireGuard"</span></pre>
+
+<div class="warn">
+<strong>SÉCURITÉ</strong> — Les clés privées ne doivent jamais sortir du poste concerné. Générer les clés client <em>directement sur le poste client</em>, ne transmettre que la clé publique au serveur.
+</div>
+
+</body></html>

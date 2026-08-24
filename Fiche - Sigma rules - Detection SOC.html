@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="UTF-8"><title>Fiche - Sigma rules</title>
+<style>
+* { box-sizing: border-box; }
+body { font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  max-width: 820px; margin: 32px auto; padding: 0 26px;
+  background: #fff; color: #1e293b; line-height: 1.6; }
+.cat { display: inline-block; background: #0891b2; color: #fff; padding: 5px 14px;
+  border-radius: 20px; font-size: 11px; font-weight: 700; letter-spacing: 1.2px; }
+h1 { color: #0e7490; font-size: 26px; font-weight: 700; margin: 12px 0 24px; }
+h2 { color: #0e7490; font-size: 17px; font-weight: 600;
+  margin: 28px 0 8px; padding-bottom: 6px; border-bottom: 1px solid #cffafe; }
+h2 .n { display: inline-block; background: #ecfeff; color: #0e7490;
+  width: 26px; height: 26px; line-height: 26px; text-align: center;
+  border-radius: 50%; font-size: 13px; margin-right: 8px; }
+p { margin: 6px 0; }
+pre { background: #f8fafc; color: #0f172a; border-left: 3px solid #0891b2;
+  padding: 12px 16px; border-radius: 4px; overflow-x: auto; font-size: 13.5px;
+  font-family: "Consolas", "Monaco", monospace; line-height: 1.55; margin: 10px 0; }
+pre .c { color: #64748b; font-style: italic; }
+pre .k { color: #0891b2; font-weight: 600; }
+code.i { background: #ecfeff; color: #0e7490; padding: 2px 6px;
+  border-radius: 3px; font-family: "Consolas", monospace; font-size: 90%; }
+.warn { background: #fef2f2; border-left: 4px solid #dc2626; padding: 10px 14px;
+  border-radius: 4px; color: #7f1d1d; font-size: 14px; margin: 12px 0; }
+.warn strong { color: #991b1b; }
+</style></head><body>
+
+<span class="cat">SIEM &middot; DÉTECTION</span>
+<h1>Sigma — Règles de détection universelles</h1>
+
+<p>Sigma = format YAML standardisé pour écrire une règle de détection <strong>une fois</strong>, puis la convertir vers n'importe quel SIEM (Splunk, ELK, Sentinel, QRadar, Wazuh...).</p>
+
+<h2><span class="n">1</span>Cloner le dépôt SigmaHQ</h2>
+<pre><span class="k">git</span> clone https://github.com/SigmaHQ/sigma.git
+<span class="k">cd</span> sigma/rules/</pre>
+<p>Contient +3000 règles maintenues par la communauté (Windows, Linux, Cloud, Réseau, macOS).</p>
+
+<h2><span class="n">2</span>Structure d'une règle Sigma (YAML)</h2>
+<pre>title: Suspicious PowerShell Encoded Command
+id: 12345678-abcd-efgh-ijkl-1234567890ab
+status: stable
+description: Détecte l'utilisation de -EncodedCommand (obfuscation courante)
+author: Toi
+date: 2026/07/25
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection:
+    Image|endswith: '\powershell.exe'
+    CommandLine|contains: '-EncodedCommand'
+  condition: selection
+level: high
+tags:
+  - attack.execution
+  - attack.t1059.001</pre>
+
+<h2><span class="n">3</span>Installer pySigma + backends</h2>
+<pre>pip install --break-system-packages pysigma pysigma-backend-elasticsearch \
+  pysigma-backend-splunk pysigma-backend-wazuh pysigma-pipeline-sysmon</pre>
+
+<h2><span class="n">4</span>Convertir une règle vers ELK (Lucene)</h2>
+<pre>sigma convert -t lucene -p sysmon rules/windows/process_creation/proc_creation_win_susp_powershell.yml</pre>
+
+<h2><span class="n">5</span>Convertir vers Splunk SPL</h2>
+<pre>sigma convert -t splunk -p sysmon rules/windows/...</pre>
+
+<h2><span class="n">6</span>Convertir vers Wazuh</h2>
+<pre>sigma convert -t wazuh -p sysmon rules/windows/...</pre>
+
+<h2><span class="n">7</span>Convertir un dossier complet</h2>
+<pre>sigma convert -t lucene -p sysmon -r rules/windows/ -o out.txt</pre>
+
+<h2><span class="n">8</span>Déployer dans le SIEM</h2>
+<pre><span class="c"># ELK - créer une detection rule</span>
+Kibana → Security → Rules → Create new rule
+  Rule type : Custom query
+  Custom query : (coller la requête convertie)
+  Severity : High
+  Investigation guide : lien vers la règle Sigma d'origine
+
+<span class="c"># Wazuh - ajouter les règles converties dans</span>
+/var/ossec/etc/rules/local_rules.xml</pre>
+
+<h2><span class="n">9</span>Tester une détection avec Atomic Red Team</h2>
+<pre><span class="c"># Installer sur poste de test (jamais en production)</span>
+Install-Module -Name invoke-atomicredteam -Scope CurrentUser
+
+<span class="c"># Simuler T1059.001 (PowerShell encoded command)</span>
+Invoke-AtomicTest T1059.001 -TestNumbers 1
+
+<span class="c"># Vérifier que l'alerte remonte dans le SIEM</span></pre>
+
+<h2><span class="n">10</span>Écrire sa propre règle</h2>
+<pre>Copier une règle existante proche du besoin → adapter :
+  - logsource       (category + product)
+  - detection       (champs à matcher)
+  - condition       (logique)
+  - tags MITRE ATT&amp;CK
+
+Valider :
+sigma check ma_regle.yml</pre>
+
+<div class="warn">
+<strong>MÉTHODE</strong> — Toujours <strong>tester en dev</strong> avant de déployer une nouvelle règle Sigma en prod. Une règle mal ciblée peut noyer le SOC sous les faux positifs.
+</div>
+
+</body></html>

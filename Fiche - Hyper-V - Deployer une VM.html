@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="UTF-8"><title>Fiche - Hyper-V</title>
+<style>
+* { box-sizing: border-box; }
+body { font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  max-width: 820px; margin: 32px auto; padding: 0 26px;
+  background: #fff; color: #1e293b; line-height: 1.6; }
+.cat { display: inline-block; background: #0891b2; color: #fff; padding: 5px 14px;
+  border-radius: 20px; font-size: 11px; font-weight: 700; letter-spacing: 1.2px; }
+h1 { color: #0e7490; font-size: 26px; font-weight: 700; margin: 12px 0 24px; }
+h2 { color: #0e7490; font-size: 17px; font-weight: 600;
+  margin: 28px 0 8px; padding-bottom: 6px; border-bottom: 1px solid #cffafe; }
+h2 .n { display: inline-block; background: #ecfeff; color: #0e7490;
+  width: 26px; height: 26px; line-height: 26px; text-align: center;
+  border-radius: 50%; font-size: 13px; margin-right: 8px; }
+p { margin: 6px 0; }
+pre { background: #f8fafc; color: #0f172a; border-left: 3px solid #0891b2;
+  padding: 12px 16px; border-radius: 4px; overflow-x: auto; font-size: 13.5px;
+  font-family: "Consolas", "Monaco", monospace; line-height: 1.55; margin: 10px 0; }
+pre .c { color: #64748b; font-style: italic; }
+pre .k { color: #0891b2; font-weight: 600; }
+code.i { background: #ecfeff; color: #0e7490; padding: 2px 6px;
+  border-radius: 3px; font-family: "Consolas", monospace; font-size: 90%; }
+.warn { background: #fef2f2; border-left: 4px solid #dc2626; padding: 10px 14px;
+  border-radius: 4px; color: #7f1d1d; font-size: 14px; margin: 12px 0; }
+.warn strong { color: #991b1b; }
+</style></head><body>
+
+<span class="cat">WINDOWS &middot; VIRTUALISATION</span>
+<h1>Hyper-V — Activer, vSwitch, VM, snapshot</h1>
+
+<h2><span class="n">1</span>Prérequis (BIOS)</h2>
+<pre>Activer dans le BIOS/UEFI :
+  - Intel VT-x / AMD-V
+  - VT-d / AMD-Vi (IOMMU)
+
+Vérifier dans Windows :
+  systeminfo | Select-String "Hyper-V"</pre>
+
+<h2><span class="n">2</span>Activer Hyper-V (Windows Server)</h2>
+<pre>Install-WindowsFeature -Name Hyper-V -IncludeManagementTools -Restart</pre>
+
+<h2><span class="n">3</span>Activer Hyper-V (Windows 10/11 Pro)</h2>
+<pre>Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V -All
+<span class="c"># Redémarrer</span></pre>
+
+<h2><span class="n">4</span>Créer un commutateur virtuel (vSwitch)</h2>
+<pre><span class="c"># External : VM accèdent au réseau physique</span>
+New-VMSwitch -Name "vSwitch-Ext" -NetAdapterName "Ethernet" -AllowManagementOS $true
+
+<span class="c"># Internal : VM ↔ hôte uniquement</span>
+New-VMSwitch -Name "vSwitch-Int" -SwitchType Internal
+
+<span class="c"># Private : VM ↔ VM uniquement</span>
+New-VMSwitch -Name "vSwitch-Priv" -SwitchType Private
+
+Get-VMSwitch</pre>
+
+<h2><span class="n">5</span>Créer une VM (PowerShell)</h2>
+<pre>$VMPath  = "D:\Hyper-V"
+$VMName  = "srv-web-01"
+$VHDPath = "$VMPath\$VMName\$VMName.vhdx"
+
+New-VM -Name $VMName -MemoryStartupBytes 4GB `
+  -NewVHDPath $VHDPath -NewVHDSizeBytes 60GB `
+  -SwitchName "vSwitch-Ext" -Generation 2
+
+Set-VM -Name $VMName -ProcessorCount 2 `
+  -DynamicMemory -MemoryMinimumBytes 2GB -MemoryMaximumBytes 8GB
+
+<span class="c"># Attacher l'ISO d'installation</span>
+Add-VMDvdDrive -VMName $VMName -Path "D:\ISO\debian-12.iso"
+
+<span class="c"># Booter en premier sur le DVD</span>
+Set-VMFirmware -VMName $VMName -FirstBootDevice (Get-VMDvdDrive -VMName $VMName)
+
+Start-VM -Name $VMName
+vmconnect localhost $VMName    <span class="c"># ouvrir la console</span></pre>
+
+<h2><span class="n">6</span>Checkpoint (snapshot)</h2>
+<pre>Checkpoint-VM -Name $VMName -SnapshotName "avant-maj"
+Get-VMSnapshot -VMName $VMName</pre>
+
+<h2><span class="n">7</span>Restaurer un checkpoint</h2>
+<pre>Restore-VMSnapshot -VMName $VMName -Name "avant-maj" -Confirm:$false</pre>
+
+<h2><span class="n">8</span>Export / import (déplacer une VM)</h2>
+<pre>Export-VM -Name $VMName -Path "D:\Exports\"
+
+<span class="c"># Sur l'hôte cible</span>
+Import-VM -Path "D:\Exports\srv-web-01\Virtual Machines\XXX.vmcx" -Copy -GenerateNewId</pre>
+
+<h2><span class="n">9</span>Réplication Hyper-V (PRA)</h2>
+<pre><span class="c"># Sur l'hôte cible (réplica) : activer</span>
+Set-VMReplicationServer -ReplicationEnabled $true `
+  -AllowedAuthenticationType Kerberos -DefaultStorageLocation "D:\Replicas"
+
+<span class="c"># Sur l'hôte source</span>
+Enable-VMReplication -VMName $VMName -ReplicaServerName "HV-DR-01" `
+  -ReplicaServerPort 80 -AuthenticationType Kerberos
+
+Start-VMInitialReplication -VMName $VMName</pre>
+
+<h2><span class="n">10</span>Sauvegarde d'une VM avec wbadmin</h2>
+<pre>wbadmin start backup -backupTarget:E: -hyperv:"srv-web-01" -quiet</pre>
+
+<h2><span class="n">11</span>Commandes utiles</h2>
+<pre>Get-VM                            <span class="c"># liste des VM</span>
+Get-VM | Format-Table Name,State,CPUUsage,MemoryAssigned
+Stop-VM -Name $VMName -Save
+Start-VM -Name $VMName
+Remove-VM -Name $VMName -Force    <span class="c"># supprime la VM (pas le VHDX)</span></pre>
+
+<div class="warn">
+<strong>GENERATION 2</strong> — Recommandée pour Windows 8+ / Linux moderne : UEFI, Secure Boot, boot rapide. <strong>Generation 1</strong> uniquement pour vieux OS (Windows Server 2003, etc.). Impossible de changer après création.
+</div>
+
+</body></html>

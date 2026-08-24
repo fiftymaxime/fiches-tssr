@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="UTF-8"><title>Fiche - Grafana Prometheus</title>
+<style>
+* { box-sizing: border-box; }
+body { font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  max-width: 820px; margin: 32px auto; padding: 0 26px;
+  background: #fff; color: #1e293b; line-height: 1.6; }
+.cat { display: inline-block; background: #0891b2; color: #fff; padding: 5px 14px;
+  border-radius: 20px; font-size: 11px; font-weight: 700; letter-spacing: 1.2px; }
+h1 { color: #0e7490; font-size: 26px; font-weight: 700; margin: 12px 0 24px; }
+h2 { color: #0e7490; font-size: 17px; font-weight: 600;
+  margin: 28px 0 8px; padding-bottom: 6px; border-bottom: 1px solid #cffafe; }
+h2 .n { display: inline-block; background: #ecfeff; color: #0e7490;
+  width: 26px; height: 26px; line-height: 26px; text-align: center;
+  border-radius: 50%; font-size: 13px; margin-right: 8px; }
+p { margin: 6px 0; }
+pre { background: #f8fafc; color: #0f172a; border-left: 3px solid #0891b2;
+  padding: 12px 16px; border-radius: 4px; overflow-x: auto; font-size: 13.5px;
+  font-family: "Consolas", "Monaco", monospace; line-height: 1.55; margin: 10px 0; }
+pre .c { color: #64748b; font-style: italic; }
+pre .k { color: #0891b2; font-weight: 600; }
+code.i { background: #ecfeff; color: #0e7490; padding: 2px 6px;
+  border-radius: 3px; font-family: "Consolas", monospace; font-size: 90%; }
+.warn { background: #fef2f2; border-left: 4px solid #dc2626; padding: 10px 14px;
+  border-radius: 4px; color: #7f1d1d; font-size: 14px; margin: 12px 0; }
+.warn strong { color: #991b1b; }
+</style></head><body>
+
+<span class="cat">SUPERVISION &middot; MÉTRIQUES</span>
+<h1>Prometheus + Grafana — Stack métriques moderne</h1>
+
+<p>Prometheus collecte, Grafana visualise. Utilisé partout dans les infras modernes / Kubernetes.</p>
+
+<h2><span class="n">1</span>Installer Prometheus (via Docker Compose)</h2>
+<pre><span class="k">sudo</span> apt install docker.io docker-compose-plugin -y
+<span class="k">mkdir</span> -p ~/monitoring &amp;&amp; <span class="k">cd</span> ~/monitoring
+<span class="k">nano</span> docker-compose.yml</pre>
+<pre>services:
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports: ["9090:9090"]
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports: ["3000:3000"]
+    volumes: ["grafana-data:/var/lib/grafana"]
+    restart: unless-stopped
+
+volumes:
+  grafana-data:</pre>
+
+<h2><span class="n">2</span>Config Prometheus (targets)</h2>
+<pre><span class="k">nano</span> prometheus.yml</pre>
+<pre>global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  - job_name: 'nodes'
+    static_configs:
+      - targets:
+          - 'srv-web-01:9100'
+          - 'srv-db-01:9100'
+          - 'srv-app-01:9100'</pre>
+
+<h2><span class="n">3</span>Démarrer la stack</h2>
+<pre><span class="k">docker</span> compose up -d
+<span class="k">docker</span> ps</pre>
+
+<h2><span class="n">4</span>Installer node_exporter sur chaque cible Linux</h2>
+<pre><span class="k">sudo</span> useradd -rs /bin/false node_exporter
+<span class="k">cd</span> /tmp
+<span class="k">wget</span> https://github.com/prometheus/node_exporter/releases/download/v1.8.2/node_exporter-1.8.2.linux-amd64.tar.gz
+<span class="k">tar</span> -xf node_exporter-*.tar.gz
+<span class="k">sudo</span> mv node_exporter-*/node_exporter /usr/local/bin/
+
+<span class="k">sudo</span> nano /etc/systemd/system/node_exporter.service</pre>
+<pre>[Unit]
+Description=Node Exporter
+After=network.target
+
+[Service]
+User=node_exporter
+ExecStart=/usr/local/bin/node_exporter
+
+[Install]
+WantedBy=multi-user.target</pre>
+<pre><span class="k">sudo</span> systemctl daemon-reload
+<span class="k">sudo</span> systemctl enable --now node_exporter
+<span class="k">sudo</span> ss -tulpn | <span class="k">grep</span> 9100</pre>
+
+<h2><span class="n">5</span>Vérifier la collecte Prometheus</h2>
+<pre>http://IP_PROMETHEUS:9090
+  → Status → Targets : tous les hôtes doivent être "UP"</pre>
+
+<h2><span class="n">6</span>Accéder à Grafana + ajouter Prometheus</h2>
+<pre>http://IP_GRAFANA:3000
+  Login : admin / admin → changer
+
+Connections → Data sources → Add data source → Prometheus
+  URL : http://prometheus:9090
+  Save &amp; Test</pre>
+
+<h2><span class="n">7</span>Importer un dashboard prêt</h2>
+<pre>Dashboards → New → Import → ID : 1860
+  (Node Exporter Full - le plus utilisé)
+Data source : Prometheus → Import</pre>
+
+<h2><span class="n">8</span>Requêtes PromQL utiles</h2>
+<pre>node_cpu_seconds_total                              <span class="c"># temps CPU par mode</span>
+100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)   <span class="c"># % CPU utilisé</span>
+node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes * 100               <span class="c"># % RAM dispo</span>
+100 - ((node_filesystem_avail_bytes / node_filesystem_size_bytes) * 100)         <span class="c"># % disque</span></pre>
+
+<h2><span class="n">9</span>Configurer une alerte Grafana</h2>
+<pre>Alerting → Alert rules → New alert rule
+  Query : 100 - (avg(rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) &gt; 90
+  Evaluate every : 1m for 5m
+  Notifications : Contact point (Email, Slack, Teams...)</pre>
+
+<h2><span class="n">10</span>Windows Exporter (équivalent node_exporter pour Windows)</h2>
+<pre><span class="c"># Télécharger le MSI depuis</span>
+<span class="c"># https://github.com/prometheus-community/windows_exporter/releases</span>
+
+msiexec /i windows_exporter-0.27.0-amd64.msi /qn `
+  ENABLED_COLLECTORS="cpu,cs,logical_disk,net,os,service,system,textfile"
+
+<span class="c"># Ajouter la cible dans prometheus.yml : 'srv-win:9182'</span></pre>
+
+<div class="warn">
+<strong>RÉTENTION</strong> — Par défaut Prometheus garde 15 jours. Pour plus, monter un volume et ajuster : <code class="i">--storage.tsdb.retention.time=90d</code>. Pour beaucoup de données, utiliser Thanos ou VictoriaMetrics.
+</div>
+
+</body></html>

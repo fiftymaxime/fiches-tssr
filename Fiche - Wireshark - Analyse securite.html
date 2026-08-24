@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="UTF-8"><title>Fiche - Wireshark sécu</title>
+<style>
+* { box-sizing: border-box; }
+body { font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  max-width: 820px; margin: 32px auto; padding: 0 26px;
+  background: #fff; color: #1e293b; line-height: 1.6; }
+.cat { display: inline-block; background: #0891b2; color: #fff; padding: 5px 14px;
+  border-radius: 20px; font-size: 11px; font-weight: 700; letter-spacing: 1.2px; }
+h1 { color: #0e7490; font-size: 26px; font-weight: 700; margin: 12px 0 24px; }
+h2 { color: #0e7490; font-size: 17px; font-weight: 600;
+  margin: 28px 0 8px; padding-bottom: 6px; border-bottom: 1px solid #cffafe; }
+h2 .n { display: inline-block; background: #ecfeff; color: #0e7490;
+  width: 26px; height: 26px; line-height: 26px; text-align: center;
+  border-radius: 50%; font-size: 13px; margin-right: 8px; }
+p { margin: 6px 0; }
+pre { background: #f8fafc; color: #0f172a; border-left: 3px solid #0891b2;
+  padding: 12px 16px; border-radius: 4px; overflow-x: auto; font-size: 13.5px;
+  font-family: "Consolas", "Monaco", monospace; line-height: 1.55; margin: 10px 0; }
+pre .c { color: #64748b; font-style: italic; }
+pre .k { color: #0891b2; font-weight: 600; }
+code.i { background: #ecfeff; color: #0e7490; padding: 2px 6px;
+  border-radius: 3px; font-family: "Consolas", monospace; font-size: 90%; }
+.warn { background: #fef2f2; border-left: 4px solid #dc2626; padding: 10px 14px;
+  border-radius: 4px; color: #7f1d1d; font-size: 14px; margin: 12px 0; }
+.warn strong { color: #991b1b; }
+</style></head><body>
+
+<span class="cat">FORENSIC &middot; ANALYSE MENACES</span>
+<h1>Wireshark — Analyse sécurité (IOC, exfil, C2)</h1>
+
+<h2><span class="n">1</span>Détecter un scan réseau (SYN scan)</h2>
+<pre><span class="c"># Beaucoup de SYN sans handshake complet vers plusieurs ports</span>
+tcp.flags.syn == 1 and tcp.flags.ack == 0
+
+<span class="c"># Statistiques → Conversations → TCP
+# Une IP avec 100+ conversations vers un même hôte = suspect</span></pre>
+
+<h2><span class="n">2</span>Scan ARP (reconnaissance locale)</h2>
+<pre>arp.opcode == 1
+
+<span class="c"># Une source qui envoie beaucoup de "who has" en rafale = scan ARP</span></pre>
+
+<h2><span class="n">3</span>Extraire des identifiants en clair</h2>
+<pre>http.authbasic                         <span class="c"># auth HTTP Basic (base64)</span>
+ftp.request.command == "USER" or ftp.request.command == "PASS"
+telnet
+pop.request.command == "USER" or "PASS"
+imap                                    <span class="c"># voir "LOGIN"</span></pre>
+
+<h2><span class="n">4</span>Extraire des fichiers transférés</h2>
+<pre>File → Export Objects → HTTP / SMB2 / IMF / FTP-DATA / TFTP
+  → Sauvegarder → soumettre le hash à VirusTotal
+
+<span class="c"># Calculer le hash SHA256 d'un fichier extrait</span>
+sha256sum fichier_extrait.exe</pre>
+
+<h2><span class="n">5</span>Détecter un beaconing C2 (Command &amp; Control)</h2>
+<pre>Signes typiques :
+  - Connexions périodiques (même intervalle) vers une même IP externe
+  - Petites tailles constantes (heartbeat)
+  - Souvent HTTPS/443 ou DNS
+
+<span class="c"># Voir intervalles réguliers</span>
+Statistics → I/O Graph → filtrer par ip.dst == IP_SUSPECT
+  Régularité toutes les 30s / 60s → beaconing probable</pre>
+
+<h2><span class="n">6</span>Analyse DNS suspecte</h2>
+<pre><span class="c"># Requêtes vers des domaines aléatoires (DGA - Domain Generation Algorithm)</span>
+dns.qry.name
+
+<span class="c"># Exfiltration via DNS (requêtes très longues)</span>
+dns.qry.name.len &gt; 50
+
+<span class="c"># Requêtes vers TXT records inhabituelles</span>
+dns.qry.type == 16</pre>
+
+<h2><span class="n">7</span>Analyse TLS — SNI et JA3</h2>
+<pre><span class="c"># Nom des sites visités en HTTPS (SNI en clair)</span>
+tls.handshake.extensions_server_name
+
+<span class="c"># Voir les certificats reçus</span>
+tls.handshake.type == 11
+
+<span class="c"># Empreinte JA3 du client (identifie le malware/outil)</span>
+<span class="c"># Nécessite plugin Wireshark ou Zeek pour extraction</span></pre>
+
+<h2><span class="n">8</span>Détecter du tunneling (ICMP, DNS)</h2>
+<pre><span class="c"># Trafic ICMP anormalement gros = tunneling data</span>
+icmp and data.len &gt; 64
+
+<span class="c"># Grosses requêtes DNS TXT = potentiellement DNS tunneling (dnscat2, Iodine)</span>
+dns.qry.type == 16 and dns.qry.name.len &gt; 100</pre>
+
+<h2><span class="n">9</span>Extraire IOC pour enquête</h2>
+<pre><span class="c"># Toutes les IP externes contactées</span>
+Statistics → Endpoints → IPv4 → cocher "Limit to display filter"
+  → Copier → soumettre chaque IP à VirusTotal / AbuseIPDB
+
+<span class="c"># Tous les domaines DNS résolus</span>
+tshark -r capture.pcap -Y dns -T fields -e dns.qry.name | sort -u</pre>
+
+<h2><span class="n">10</span>Reconstitution d'une session (HTTP, TLS déchiffré si clés dispo)</h2>
+<pre>Follow → HTTP Stream / TLS Stream
+
+<span class="c"># Déchiffrer TLS avec les clés (nécessite variable SSLKEYLOGFILE côté client)</span>
+Edit → Preferences → Protocols → TLS
+  (Pre)-Master-Secret log filename : /chemin/vers/sslkeys.log</pre>
+
+<h2><span class="n">11</span>Timeline de l'incident</h2>
+<pre>Statistics → Capture File Properties
+  Voir "First packet" et "Last packet"
+
+Menu View → Time Display Format → UTC Date and Time
+  → Permet d'aligner avec les logs SIEM</pre>
+
+<div class="warn">
+<strong>CHAÎNE DE PRÉSERVATION</strong> — En cas d'incident réel, préserver le pcap original (hash SHA256), travailler sur une copie. Documenter chaque manipulation (date, opérateur, outil). Un .pcap peut être une preuve judiciaire.
+</div>
+
+</body></html>

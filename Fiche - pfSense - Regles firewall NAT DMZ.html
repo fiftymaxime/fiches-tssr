@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="UTF-8"><title>Fiche - pfSense</title>
+<style>
+* { box-sizing: border-box; }
+body { font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  max-width: 820px; margin: 32px auto; padding: 0 26px;
+  background: #fff; color: #1e293b; line-height: 1.6; }
+.cat { display: inline-block; background: #0891b2; color: #fff; padding: 5px 14px;
+  border-radius: 20px; font-size: 11px; font-weight: 700; letter-spacing: 1.2px; }
+h1 { color: #0e7490; font-size: 26px; font-weight: 700; margin: 12px 0 24px; }
+h2 { color: #0e7490; font-size: 17px; font-weight: 600;
+  margin: 28px 0 8px; padding-bottom: 6px; border-bottom: 1px solid #cffafe; }
+h2 .n { display: inline-block; background: #ecfeff; color: #0e7490;
+  width: 26px; height: 26px; line-height: 26px; text-align: center;
+  border-radius: 50%; font-size: 13px; margin-right: 8px; }
+h3 { color: #0891b2; font-size: 14px; font-weight: 600;
+  margin: 26px 0 6px; text-transform: uppercase; letter-spacing: 0.8px; }
+p { margin: 6px 0; }
+pre { background: #f8fafc; color: #0f172a; border-left: 3px solid #0891b2;
+  padding: 12px 16px; border-radius: 4px; overflow-x: auto; font-size: 13.5px;
+  font-family: "Consolas", "Monaco", monospace; line-height: 1.55; margin: 10px 0; }
+pre .c { color: #64748b; font-style: italic; }
+pre .k { color: #0891b2; font-weight: 600; }
+code.i { background: #ecfeff; color: #0e7490; padding: 2px 6px;
+  border-radius: 3px; font-family: "Consolas", monospace; font-size: 90%; }
+.warn { background: #fef2f2; border-left: 4px solid #dc2626; padding: 10px 14px;
+  border-radius: 4px; color: #7f1d1d; font-size: 14px; margin: 12px 0; }
+.warn strong { color: #991b1b; }
+</style></head><body>
+
+<span class="cat">PARE-FEU &middot; PFSENSE</span>
+<h1>pfSense — Règles firewall, NAT et DMZ</h1>
+
+<h3>Config initiale (console série ou vGA)</h3>
+
+<h2><span class="n">1</span>Assigner les interfaces</h2>
+<pre>Menu console → <span class="k">1</span> Assign Interfaces
+  WAN → em0
+  LAN → em1
+  OPT1 (DMZ) → em2
+
+Menu console → <span class="k">2</span> Set interface IP address
+  LAN : 192.168.1.1/24 (activer DHCP server : yes)</pre>
+
+<h2><span class="n">2</span>Accès web et mot de passe admin</h2>
+<pre>Depuis un poste LAN : https://192.168.1.1
+Login initial : admin / pfsense
+Assistant → changer immédiatement le mot de passe</pre>
+
+<h3>Configuration des interfaces</h3>
+
+<h2><span class="n">3</span>WAN</h2>
+<pre>Interfaces → WAN
+  IPv4 Configuration Type : DHCP (ou Static selon FAI)
+  Block private networks   : ✔
+  Block bogon networks     : ✔</pre>
+
+<h2><span class="n">4</span>LAN</h2>
+<pre>Interfaces → LAN
+  IPv4 : 192.168.1.1/24
+Services → DHCP Server → LAN
+  Range : 192.168.1.100 - 192.168.1.200</pre>
+
+<h2><span class="n">5</span>DMZ (nouvelle interface)</h2>
+<pre>Interfaces → Assignments → Available network ports
+  Ajouter em2 → renommer "DMZ"
+
+Interfaces → DMZ
+  Enable : ✔
+  IPv4 : 192.168.99.1/24
+Services → DHCP Server → DMZ
+  Range : 192.168.99.100 - 192.168.99.150</pre>
+
+<h3>Règles pare-feu</h3>
+
+<h2><span class="n">6</span>Règles LAN (par défaut : any-to-any autorisé)</h2>
+<pre>Firewall → Rules → LAN
+
+<span class="c"># Interdire LAN → DMZ (ou l'inverse selon besoin)</span>
+Action     : Block
+Interface  : LAN
+Source     : LAN net
+Destination: DMZ net
+
+<span class="c"># Autoriser LAN → Internet uniquement</span>
+Action     : Pass
+Source     : LAN net
+Destination: ! DMZ net</pre>
+
+<h2><span class="n">7</span>Règles DMZ (isolation maximale)</h2>
+<pre>Firewall → Rules → DMZ
+
+<span class="c"># Bloquer DMZ → LAN (obligatoire)</span>
+Action : Block
+Source : DMZ net
+Destination : LAN net
+
+<span class="c"># Autoriser DMZ → Internet</span>
+Action : Pass
+Source : DMZ net
+Destination : any (protocole HTTP/HTTPS/DNS)</pre>
+
+<h3>NAT — publier un service DMZ vers Internet</h3>
+
+<h2><span class="n">8</span>Port Forward (ex : serveur web DMZ)</h2>
+<pre>Firewall → NAT → Port Forward → Add
+
+Interface        : WAN
+Protocol         : TCP
+Destination      : WAN address
+Destination port : HTTPS (443)
+Redirect target  : 192.168.99.10 (IP serveur web DMZ)
+Redirect port    : HTTPS
+Filter rule assoc: Add associated filter rule (auto)</pre>
+
+<h2><span class="n">9</span>Sauvegarde de la configuration</h2>
+<pre>Diagnostics → Backup &amp; Restore
+  Download configuration as XML
+
+<span class="c"># Fichier .xml à stocker hors du pfSense (Bitwarden, coffre-fort)</span></pre>
+
+<h2><span class="n">10</span>Vérifications</h2>
+<pre>Status → System Logs → Firewall     <span class="c"># voir les blocs/pass en temps réel</span>
+Diagnostics → States                 <span class="c"># sessions ouvertes</span>
+Diagnostics → Ping / Traceroute      <span class="c"># tests depuis pfSense</span></pre>
+
+<div class="warn">
+<strong>PIÈGE FRÉQUENT</strong> — Les règles pfSense sont évaluées <strong>de haut en bas</strong> et la première qui matche s'applique. Placer les règles spécifiques (block) <strong>au-dessus</strong> des règles génériques (allow).
+</div>
+
+</body></html>

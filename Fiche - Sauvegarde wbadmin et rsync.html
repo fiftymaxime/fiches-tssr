@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="UTF-8"><title>Fiche - wbadmin rsync</title>
+<style>
+* { box-sizing: border-box; }
+body { font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  max-width: 820px; margin: 32px auto; padding: 0 26px;
+  background: #fff; color: #1e293b; line-height: 1.6; }
+.cat { display: inline-block; background: #0891b2; color: #fff; padding: 5px 14px;
+  border-radius: 20px; font-size: 11px; font-weight: 700; letter-spacing: 1.2px; }
+h1 { color: #0e7490; font-size: 26px; font-weight: 700; margin: 12px 0 24px; }
+h2 { color: #0e7490; font-size: 17px; font-weight: 600;
+  margin: 28px 0 8px; padding-bottom: 6px; border-bottom: 1px solid #cffafe; }
+h2 .n { display: inline-block; background: #ecfeff; color: #0e7490;
+  width: 26px; height: 26px; line-height: 26px; text-align: center;
+  border-radius: 50%; font-size: 13px; margin-right: 8px; }
+h3 { color: #0891b2; font-size: 14px; font-weight: 600;
+  margin: 26px 0 6px; text-transform: uppercase; letter-spacing: 0.8px; }
+p { margin: 6px 0; }
+pre { background: #f8fafc; color: #0f172a; border-left: 3px solid #0891b2;
+  padding: 12px 16px; border-radius: 4px; overflow-x: auto; font-size: 13.5px;
+  font-family: "Consolas", "Monaco", monospace; line-height: 1.55; margin: 10px 0; }
+pre .c { color: #64748b; font-style: italic; }
+pre .k { color: #0891b2; font-weight: 600; }
+code.i { background: #ecfeff; color: #0e7490; padding: 2px 6px;
+  border-radius: 3px; font-family: "Consolas", monospace; font-size: 90%; }
+.warn { background: #fef2f2; border-left: 4px solid #dc2626; padding: 10px 14px;
+  border-radius: 4px; color: #7f1d1d; font-size: 14px; margin: 12px 0; }
+.warn strong { color: #991b1b; }
+</style></head><body>
+
+<span class="cat">SAUVEGARDE &middot; NATIF OS</span>
+<h1>Sauvegardes natives — wbadmin (Windows) &amp; rsync (Linux)</h1>
+
+<h3>Windows — wbadmin (Windows Server Backup)</h3>
+
+<h2><span class="n">1</span>Installer la fonctionnalité</h2>
+<pre>Install-WindowsFeature -Name Windows-Server-Backup -IncludeManagementTools</pre>
+
+<h2><span class="n">2</span>Sauvegarde complète (Bare Metal)</h2>
+<pre>wbadmin start backup `
+  -backupTarget:E: `
+  -allCritical `
+  -include:C: `
+  -vssFull -quiet</pre>
+
+<h2><span class="n">3</span>Sauvegarde de dossiers spécifiques</h2>
+<pre>wbadmin start backup `
+  -backupTarget:\\SRV-BACKUP\Backup$ `
+  -include:C:\Data,C:\Users\ImportantUser `
+  -user:MONLAB\backup -password:MotDePasse -quiet</pre>
+
+<h2><span class="n">4</span>Planifier une sauvegarde quotidienne</h2>
+<pre>wbadmin enable backup `
+  -addtarget:E: `
+  -include:C: -allCritical `
+  -schedule:02:00 -vssFull -quiet</pre>
+
+<h2><span class="n">5</span>Lister les sauvegardes disponibles</h2>
+<pre>wbadmin get versions</pre>
+
+<h2><span class="n">6</span>Restaurer un fichier</h2>
+<pre>wbadmin start recovery `
+  -version:07/25/2026-02:00 `
+  -itemType:File `
+  -items:C:\Data\dossier `
+  -recoveryTarget:D:\Restore `
+  -notRestoreAcl -quiet</pre>
+
+<h2><span class="n">7</span>Restaurer un système complet (Bare Metal Recovery)</h2>
+<pre>Booter sur ISO Windows Server → Repair → Advanced → System Image Recovery
+Ou depuis Windows RE : wbadmin start sysrecovery -version:...</pre>
+
+<h3>Linux — rsync avec rotation incrémentale</h3>
+
+<h2><span class="n">8</span>Installation</h2>
+<pre><span class="k">sudo</span> apt install rsync -y</pre>
+
+<h2><span class="n">9</span>Sauvegarde simple</h2>
+<pre>rsync -avh --delete /home/ user@srv-backup:/backup/home/
+
+<span class="c"># Options :
+# -a : archive (récursif + permissions + liens + timestamps)
+# -v : verbose  |  -h : human-readable
+# --delete : supprime dans dest ce qui n'existe plus dans source
+# -z : compression réseau (utile en WAN)</span></pre>
+
+<h2><span class="n">10</span>Sauvegarde incrémentale économe (--link-dest)</h2>
+<pre>DATE=$(date +%F)
+LAST=$(ls -1 /backup/ | tail -n 1)
+
+rsync -avh --delete \
+  --link-dest=/backup/$LAST \
+  /home/ /backup/$DATE/
+
+<span class="c"># Résultat : chaque backup ressemble à une copie complète, mais
+# les fichiers inchangés sont des hard links vers la précédente
+# → gain d'espace énorme (seuls les changements consomment)</span></pre>
+
+<h2><span class="n">11</span>Rotation automatique (garder 7/4/3)</h2>
+<pre>find /backup/ -maxdepth 1 -type d -mtime +7 -exec rm -rf {} \;
+<span class="c"># Supprime les backups &gt; 7 jours</span></pre>
+
+<h2><span class="n">12</span>Script complet + cron</h2>
+<pre><span class="k">sudo</span> nano /usr/local/bin/backup.sh</pre>
+<pre>#!/bin/bash
+SRC="/home/"
+DEST="/backup"
+DATE=$(date +%F-%H%M)
+LAST=$(ls -1t $DEST | head -n 1)
+
+if [ -n "$LAST" ]; then
+    LINKDEST="--link-dest=$DEST/$LAST"
+fi
+
+rsync -avh --delete $LINKDEST $SRC $DEST/$DATE/ &gt; /var/log/backup-$DATE.log 2&gt;&amp;1
+
+<span class="c"># Rotation - garde 14 backups</span>
+ls -1t $DEST | tail -n +15 | xargs -I{} rm -rf $DEST/{}</pre>
+<pre><span class="k">sudo</span> chmod +x /usr/local/bin/backup.sh
+<span class="k">sudo</span> crontab -e
+
+0 2 * * * /usr/local/bin/backup.sh</pre>
+
+<h2><span class="n">13</span>Restauration</h2>
+<pre>rsync -avh /backup/2026-07-25-0200/etc/nginx/ /etc/nginx/
+<span class="c"># Ou copie manuelle : cp -a /backup/... /destination</span></pre>
+
+<div class="warn">
+<strong>TEST OBLIGATOIRE</strong> — Une sauvegarde jamais testée n'existe pas. Faire un exercice de restauration mensuel sur un fichier + trimestriel sur un système complet. Documenter le temps de restauration (RTO).
+</div>
+
+</body></html>

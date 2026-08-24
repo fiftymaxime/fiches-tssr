@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Fiche - Partage SMB (Samba) sur Debian</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    max-width: 820px; margin: 32px auto; padding: 0 26px;
+    background: #ffffff; color: #1e293b; line-height: 1.6;
+  }
+  .cat {
+    display: inline-block; background: #0891b2; color: #fff;
+    padding: 5px 14px; border-radius: 20px;
+    font-size: 11px; font-weight: 700; letter-spacing: 1.2px;
+  }
+  h1 {
+    color: #0e7490; font-size: 26px; font-weight: 700;
+    margin: 12px 0 24px;
+  }
+  h2 {
+    color: #0e7490; font-size: 17px; font-weight: 600;
+    margin: 28px 0 8px; padding-bottom: 6px;
+    border-bottom: 1px solid #cffafe;
+  }
+  h2 .n {
+    display: inline-block; background: #ecfeff; color: #0e7490;
+    width: 26px; height: 26px; line-height: 26px; text-align: center;
+    border-radius: 50%; font-size: 13px; margin-right: 8px;
+  }
+  p { margin: 6px 0; }
+  pre {
+    background: #f8fafc; color: #0f172a;
+    border-left: 3px solid #0891b2;
+    padding: 12px 16px; border-radius: 4px;
+    overflow-x: auto; font-size: 13.5px;
+    font-family: "Consolas", "Monaco", "Courier New", monospace;
+    line-height: 1.55; margin: 10px 0;
+  }
+  pre .c { color: #64748b; font-style: italic; }
+  pre .k { color: #0891b2; font-weight: 600; }
+  code.i {
+    background: #ecfeff; color: #0e7490; padding: 2px 6px;
+    border-radius: 3px; font-family: "Consolas", monospace; font-size: 90%;
+  }
+  .warn {
+    background: #fef2f2; border-left: 4px solid #dc2626;
+    padding: 10px 14px; border-radius: 4px;
+    color: #7f1d1d; font-size: 14px; margin: 12px 0;
+  }
+  .warn strong { color: #991b1b; }
+</style>
+</head>
+<body>
+
+<span class="cat">LINUX &middot; PARTAGE FICHIERS</span>
+<h1>Partage SMB (Samba) sur Debian</h1>
+
+<h2><span class="n">1</span>Installer Samba</h2>
+<pre><span class="k">sudo</span> apt update
+<span class="k">sudo</span> apt install samba samba-common-bin -y</pre>
+
+<h2><span class="n">2</span>Sauvegarder la config d'origine</h2>
+<pre><span class="k">sudo</span> cp /etc/samba/smb.conf /etc/samba/smb.conf.back</pre>
+
+<h2><span class="n">3</span>Créer le dossier à partager</h2>
+<pre><span class="k">sudo</span> mkdir -p /home/shared/sharedSMB
+<span class="k">sudo</span> chmod 777 /home/shared/sharedSMB</pre>
+
+<h2><span class="n">4</span>Éditer <code class="i">smb.conf</code> et déclarer le partage</h2>
+<pre><span class="k">sudo</span> nano /etc/samba/smb.conf</pre>
+<p>Ajouter à la fin du fichier :</p>
+<pre>[MonPartage]
+   path = /home/shared/sharedSMB
+   readonly = no
+   browseable = yes
+   guest ok = yes</pre>
+<p>Enregistrer : <strong>Ctrl+O</strong> puis <strong>Entrée</strong>, quitter : <strong>Ctrl+X</strong>.</p>
+
+<h2><span class="n">5</span>(Optionnel) Créer un utilisateur Samba</h2>
+<pre><span class="k">sudo</span> adduser sambauser
+<span class="k">sudo</span> smbpasswd -a sambauser</pre>
+
+<h2><span class="n">6</span>Vérifier la syntaxe et redémarrer</h2>
+<pre>testparm
+<span class="k">sudo</span> systemctl restart smbd nmbd
+<span class="k">sudo</span> systemctl status smbd</pre>
+
+<h2><span class="n">7</span>Ouvrir le pare-feu</h2>
+<pre><span class="k">sudo</span> ufw allow samba</pre>
+
+<h2><span class="n">8</span>Tester l'accès</h2>
+<pre><span class="c"># Depuis Linux</span>
+smbclient -L //IP_SERVEUR -U sambauser
+
+<span class="c"># Depuis Windows (barre d'adresse de l'Explorateur)</span>
+\\IP_SERVEUR\MonPartage</pre>
+
+<div class="warn">
+<strong>ATTENTION</strong> — <code class="i">chmod 777</code> et <code class="i">guest ok = yes</code> sont à réserver aux tests / labo. En production : droits restreints et authentification obligatoire.
+</div>
+
+</body>
+</html>

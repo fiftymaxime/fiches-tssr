@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="UTF-8"><title>Fiche - OpenVPN</title>
+<style>
+* { box-sizing: border-box; }
+body { font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  max-width: 820px; margin: 32px auto; padding: 0 26px;
+  background: #fff; color: #1e293b; line-height: 1.6; }
+.cat { display: inline-block; background: #0891b2; color: #fff; padding: 5px 14px;
+  border-radius: 20px; font-size: 11px; font-weight: 700; letter-spacing: 1.2px; }
+h1 { color: #0e7490; font-size: 26px; font-weight: 700; margin: 12px 0 24px; }
+h2 { color: #0e7490; font-size: 17px; font-weight: 600;
+  margin: 28px 0 8px; padding-bottom: 6px; border-bottom: 1px solid #cffafe; }
+h2 .n { display: inline-block; background: #ecfeff; color: #0e7490;
+  width: 26px; height: 26px; line-height: 26px; text-align: center;
+  border-radius: 50%; font-size: 13px; margin-right: 8px; }
+p { margin: 6px 0; }
+pre { background: #f8fafc; color: #0f172a; border-left: 3px solid #0891b2;
+  padding: 12px 16px; border-radius: 4px; overflow-x: auto; font-size: 13.5px;
+  font-family: "Consolas", "Monaco", monospace; line-height: 1.55; margin: 10px 0; }
+pre .c { color: #64748b; font-style: italic; }
+pre .k { color: #0891b2; font-weight: 600; }
+code.i { background: #ecfeff; color: #0e7490; padding: 2px 6px;
+  border-radius: 3px; font-family: "Consolas", monospace; font-size: 90%; }
+.warn { background: #fef2f2; border-left: 4px solid #dc2626; padding: 10px 14px;
+  border-radius: 4px; color: #7f1d1d; font-size: 14px; margin: 12px 0; }
+.warn strong { color: #991b1b; }
+</style></head><body>
+
+<span class="cat">LINUX &middot; VPN</span>
+<h1>OpenVPN — Serveur + client (script rapide)</h1>
+
+<p>Méthode la plus rapide : script <code class="i">openvpn-install.sh</code> (angristan) qui automatise PKI + config.</p>
+
+<h2><span class="n">1</span>Installation via script officiel</h2>
+<pre><span class="k">curl</span> -O https://raw.githubusercontent.com/angristan/openvpn-install/master/openvpn-install.sh
+<span class="k">chmod</span> +x openvpn-install.sh
+<span class="k">sudo</span> ./openvpn-install.sh</pre>
+<p>Répondre :</p>
+<pre>IP publique              : auto-détectée
+Protocole                : UDP (recommandé)
+Port                     : 1194 (ou custom)
+DNS pour le client       : 1.1.1.1 / Cloudflare
+Client compressed        : No
+Encryption               : AES-256-GCM
+Certificate curve        : prime256v1
+Auth digest              : SHA256
+
+Nom du 1er client        : max-portable</pre>
+
+<h2><span class="n">2</span>Fichier .ovpn du client</h2>
+<pre><span class="k">ls</span> /root/*.ovpn
+<span class="c"># → /root/max-portable.ovpn</span></pre>
+<p>Ce fichier contient tout : certificats, clé privée, config. À transmettre au client par canal sécurisé.</p>
+
+<h2><span class="n">3</span>Ajouter un nouveau client</h2>
+<pre><span class="k">sudo</span> ./openvpn-install.sh
+<span class="c"># → choisir "1) Add a new user"</span></pre>
+
+<h2><span class="n">4</span>Révoquer un client</h2>
+<pre><span class="k">sudo</span> ./openvpn-install.sh
+<span class="c"># → choisir "2) Revoke existing user"</span></pre>
+
+<h2><span class="n">5</span>Vérifier le service</h2>
+<pre><span class="k">sudo</span> systemctl status openvpn-server@server
+<span class="k">sudo</span> ss -tulpn | <span class="k">grep</span> openvpn</pre>
+
+<h2><span class="n">6</span>Voir les clients connectés</h2>
+<pre><span class="k">sudo</span> <span class="k">cat</span> /var/log/openvpn/status.log</pre>
+
+<h2><span class="n">7</span>Ouvrir le pare-feu (si pas fait par le script)</h2>
+<pre><span class="k">sudo</span> ufw allow 1194/udp
+<span class="k">sudo</span> ufw allow OpenSSH
+<span class="k">sudo</span> ufw enable</pre>
+
+<h2><span class="n">8</span>Connexion client</h2>
+<pre><span class="c"># Client Windows/macOS : OpenVPN Connect ou OpenVPN GUI
+# Importer le fichier .ovpn → Connect</span>
+
+<span class="c"># Client Linux</span>
+<span class="k">sudo</span> openvpn --config max-portable.ovpn</pre>
+
+<h2><span class="n">9</span>Logs et troubleshoot</h2>
+<pre><span class="k">sudo</span> journalctl -u openvpn-server@server -f
+<span class="k">sudo</span> tail -f /var/log/openvpn/openvpn.log</pre>
+
+<div class="warn">
+<strong>SÉCURITÉ</strong> — Le fichier .ovpn contient la clé privée client. À transmettre chiffré (7-Zip AES256 + mot de passe séparé). Ne jamais l'envoyer par mail en clair ni le stocker dans un cloud personnel.
+</div>
+
+</body></html>

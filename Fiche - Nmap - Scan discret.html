@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="UTF-8"><title>Fiche - Nmap discret</title>
+<style>
+* { box-sizing: border-box; }
+body { font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  max-width: 820px; margin: 32px auto; padding: 0 26px;
+  background: #fff; color: #1e293b; line-height: 1.6; }
+.cat { display: inline-block; background: #0891b2; color: #fff; padding: 5px 14px;
+  border-radius: 20px; font-size: 11px; font-weight: 700; letter-spacing: 1.2px; }
+h1 { color: #0e7490; font-size: 26px; font-weight: 700; margin: 12px 0 24px; }
+h2 { color: #0e7490; font-size: 17px; font-weight: 600;
+  margin: 28px 0 8px; padding-bottom: 6px; border-bottom: 1px solid #cffafe; }
+h2 .n { display: inline-block; background: #ecfeff; color: #0e7490;
+  width: 26px; height: 26px; line-height: 26px; text-align: center;
+  border-radius: 50%; font-size: 13px; margin-right: 8px; }
+p { margin: 6px 0; }
+pre { background: #f8fafc; color: #0f172a; border-left: 3px solid #0891b2;
+  padding: 12px 16px; border-radius: 4px; overflow-x: auto; font-size: 13.5px;
+  font-family: "Consolas", "Monaco", monospace; line-height: 1.55; margin: 10px 0; }
+pre .c { color: #64748b; font-style: italic; }
+pre .k { color: #0891b2; font-weight: 600; }
+code.i { background: #ecfeff; color: #0e7490; padding: 2px 6px;
+  border-radius: 3px; font-family: "Consolas", monospace; font-size: 90%; }
+.warn { background: #fef2f2; border-left: 4px solid #dc2626; padding: 10px 14px;
+  border-radius: 4px; color: #7f1d1d; font-size: 14px; margin: 12px 0; }
+.warn strong { color: #991b1b; }
+</style></head><body>
+
+<span class="cat">AUDIT &middot; ÉVASION IDS</span>
+<h1>Nmap — Scan discret (évasion IDS/IPS)</h1>
+
+<p>Techniques pour minimiser la détection par des IDS type Snort/Suricata. Utile en test d'intrusion autorisé ou en audit red team.</p>
+
+<h2><span class="n">1</span>SYN scan (semi-ouvert, plus discret que TCP connect)</h2>
+<pre><span class="k">sudo</span> nmap -sS 192.168.1.10</pre>
+<p>Envoie SYN, reçoit SYN-ACK, envoie RST sans finaliser le handshake. Non loggé par les applications.</p>
+
+<h2><span class="n">2</span>Timing lent</h2>
+<pre><span class="k">sudo</span> nmap -sS -T1 192.168.1.10        <span class="c"># sneaky</span>
+<span class="k">sudo</span> nmap -sS -T0 192.168.1.10        <span class="c"># paranoid (très lent)</span>
+
+<span class="c"># Contrôle fin - 1 paquet toutes les 15s</span>
+<span class="k">sudo</span> nmap -sS --scan-delay 15s 192.168.1.10</pre>
+
+<h2><span class="n">3</span>Fragmentation des paquets</h2>
+<pre><span class="k">sudo</span> nmap -sS -f 192.168.1.10          <span class="c"># fragments de 8 octets</span>
+<span class="k">sudo</span> nmap -sS -ff 192.168.1.10         <span class="c"># fragments de 16 octets</span>
+<span class="k">sudo</span> nmap -sS --mtu 24 192.168.1.10    <span class="c"># MTU custom (multiple de 8)</span></pre>
+
+<h2><span class="n">4</span>Decoys (leurres)</h2>
+<pre><span class="c"># Le scan semble venir de 4 IP différentes en plus de la vraie</span>
+<span class="k">sudo</span> nmap -sS -D 192.168.1.5,192.168.1.6,ME,192.168.1.8 192.168.1.10
+
+<span class="c"># Decoys aléatoires (10 IP)</span>
+<span class="k">sudo</span> nmap -sS -D RND:10 192.168.1.10</pre>
+
+<h2><span class="n">5</span>Port source spécifique (contournement d'ACL)</h2>
+<pre><span class="c"># Certains firewalls autorisent le trafic depuis port 53 (DNS) ou 80</span>
+<span class="k">sudo</span> nmap -sS --source-port 53 192.168.1.10
+<span class="k">sudo</span> nmap -sS -g 53 192.168.1.10        <span class="c"># équivalent</span></pre>
+
+<h2><span class="n">6</span>Idle scan (via un hôte "zombie")</h2>
+<pre><span class="c"># Scan sans qu'aucun paquet ne parte de ta vraie IP</span>
+<span class="k">sudo</span> nmap -sI 192.168.1.99 192.168.1.10
+<span class="c"># 192.168.1.99 = hôte "zombie" (imprimante, IoT peu actif)</span></pre>
+
+<h2><span class="n">7</span>Randomisation des cibles</h2>
+<pre><span class="k">sudo</span> nmap -sS --randomize-hosts 192.168.1.0/24</pre>
+
+<h2><span class="n">8</span>Éviter certaines phases</h2>
+<pre><span class="c"># Pas de découverte préalable (utile si ICMP bloqué)</span>
+<span class="k">sudo</span> nmap -sS -Pn 192.168.1.10
+
+<span class="c"># Pas de résolution DNS (moins de trafic vers résolveur)</span>
+<span class="k">sudo</span> nmap -sS -n 192.168.1.10</pre>
+
+<h2><span class="n">9</span>MAC spoofing</h2>
+<pre><span class="k">sudo</span> nmap -sS --spoof-mac 00:11:22:33:44:55 192.168.1.10
+<span class="k">sudo</span> nmap -sS --spoof-mac Cisco 192.168.1.10    <span class="c"># adresse Cisco random</span></pre>
+
+<h2><span class="n">10</span>Combinaison "furtive" complète</h2>
+<pre><span class="k">sudo</span> nmap -sS -T1 -f -D RND:5 --source-port 53 -Pn -n \
+  --randomize-hosts --scan-delay 5s 192.168.1.0/24</pre>
+
+<div class="warn">
+<strong>LÉGAL</strong> — Ces techniques sont légitimes uniquement dans un cadre <strong>autorisé par écrit</strong> (audit interne, pentest sur contrat). Les utiliser sans autorisation = intrusion informatique (art. 323-1 Code pénal en France, jusqu'à 5 ans de prison).
+</div>
+
+</body></html>

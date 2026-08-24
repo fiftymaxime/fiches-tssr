@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Fiche - Partage NFS sur Debian</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    max-width: 820px; margin: 32px auto; padding: 0 26px;
+    background: #ffffff; color: #1e293b; line-height: 1.6;
+  }
+  .cat {
+    display: inline-block; background: #0891b2; color: #fff;
+    padding: 5px 14px; border-radius: 20px;
+    font-size: 11px; font-weight: 700; letter-spacing: 1.2px;
+  }
+  h1 {
+    color: #0e7490; font-size: 26px; font-weight: 700;
+    margin: 12px 0 24px;
+  }
+  h2 {
+    color: #0e7490; font-size: 17px; font-weight: 600;
+    margin: 28px 0 8px; padding-bottom: 6px;
+    border-bottom: 1px solid #cffafe;
+  }
+  h2 .n {
+    display: inline-block; background: #ecfeff; color: #0e7490;
+    width: 26px; height: 26px; line-height: 26px; text-align: center;
+    border-radius: 50%; font-size: 13px; margin-right: 8px;
+  }
+  h3 {
+    color: #0891b2; font-size: 14px; font-weight: 600;
+    margin: 22px 0 6px; text-transform: uppercase; letter-spacing: 0.8px;
+  }
+  p { margin: 6px 0; }
+  pre {
+    background: #f8fafc; color: #0f172a;
+    border-left: 3px solid #0891b2;
+    padding: 12px 16px; border-radius: 4px;
+    overflow-x: auto; font-size: 13.5px;
+    font-family: "Consolas", "Monaco", "Courier New", monospace;
+    line-height: 1.55; margin: 10px 0;
+  }
+  pre .c { color: #64748b; font-style: italic; }
+  pre .k { color: #0891b2; font-weight: 600; }
+  code.i {
+    background: #ecfeff; color: #0e7490; padding: 2px 6px;
+    border-radius: 3px; font-family: "Consolas", monospace; font-size: 90%;
+  }
+  .warn {
+    background: #fef2f2; border-left: 4px solid #dc2626;
+    padding: 10px 14px; border-radius: 4px;
+    color: #7f1d1d; font-size: 14px; margin: 12px 0;
+  }
+  .warn strong { color: #991b1b; }
+  ul { margin: 6px 0 6px 20px; padding: 0; font-size: 14px; }
+</style>
+</head>
+<body>
+
+<span class="cat">LINUX &middot; PARTAGE FICHIERS</span>
+<h1>Partage NFS sur Debian</h1>
+
+<h3>Côté serveur</h3>
+
+<h2><span class="n">1</span>Installer le serveur NFS</h2>
+<pre><span class="k">sudo</span> apt update
+<span class="k">sudo</span> apt install nfs-kernel-server -y</pre>
+
+<h2><span class="n">2</span>Créer le dossier à partager</h2>
+<pre><span class="k">sudo</span> mkdir -p /srv/nfs/shared
+<span class="k">sudo</span> chown nobody:nogroup /srv/nfs/shared
+<span class="k">sudo</span> chmod 777 /srv/nfs/shared</pre>
+
+<h2><span class="n">3</span>Déclarer le partage dans <code class="i">/etc/exports</code></h2>
+<pre><span class="k">sudo</span> nano /etc/exports</pre>
+<p>Ajouter une ligne (adapter le sous-réseau autorisé) :</p>
+<pre>/srv/nfs/shared 192.168.1.0/24(rw,sync,no_subtree_check)</pre>
+<p style="font-size:14px;">Options usuelles :</p>
+<ul>
+  <li><code class="i">rw</code> — lecture/écriture</li>
+  <li><code class="i">sync</code> — écriture confirmée avant retour</li>
+  <li><code class="i">no_subtree_check</code> — meilleures performances</li>
+  <li><code class="i">root_squash</code> (par défaut) — un root client devient <em>nobody</em> sur le serveur</li>
+</ul>
+
+<h2><span class="n">4</span>Appliquer et redémarrer</h2>
+<pre><span class="k">sudo</span> exportfs -arv
+<span class="k">sudo</span> systemctl restart nfs-kernel-server
+<span class="k">sudo</span> systemctl enable nfs-kernel-server
+<span class="k">sudo</span> systemctl status nfs-kernel-server</pre>
+
+<h2><span class="n">5</span>Ouvrir le pare-feu</h2>
+<pre><span class="k">sudo</span> ufw allow from 192.168.1.0/24 to any port nfs</pre>
+
+<h3>Côté client Linux</h3>
+
+<h2><span class="n">6</span>Installer les outils NFS</h2>
+<pre><span class="k">sudo</span> apt install nfs-common -y</pre>
+
+<h2><span class="n">7</span>Monter le partage manuellement</h2>
+<pre><span class="k">sudo</span> mkdir -p /mnt/nfs
+<span class="k">sudo</span> mount IP_SERVEUR:/srv/nfs/shared /mnt/nfs</pre>
+
+<h2><span class="n">8</span>Monter automatiquement au démarrage</h2>
+<pre><span class="k">sudo</span> nano /etc/fstab</pre>
+<p>Ajouter à la fin :</p>
+<pre>IP_SERVEUR:/srv/nfs/shared  /mnt/nfs  nfs  defaults  0  0</pre>
+<p>Puis tester :</p>
+<pre><span class="k">sudo</span> mount -a</pre>
+
+<h2><span class="n">9</span>Vérifier</h2>
+<pre><span class="c"># Liste des partages exportés par le serveur</span>
+showmount -e IP_SERVEUR
+
+<span class="c"># Vérifier que le montage est bien actif</span>
+df -h | grep nfs</pre>
+
+<div class="warn">
+<strong>ATTENTION</strong> — Ne jamais utiliser <code class="i">no_root_squash</code> sur un partage exposé : un attaquant root sur le client obtiendrait les droits root sur les fichiers du serveur.
+</div>
+
+</body>
+</html>

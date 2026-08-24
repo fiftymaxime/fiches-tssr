@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="UTF-8"><title>Fiche - Wireshark troubleshoot</title>
+<style>
+* { box-sizing: border-box; }
+body { font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  max-width: 820px; margin: 32px auto; padding: 0 26px;
+  background: #fff; color: #1e293b; line-height: 1.6; }
+.cat { display: inline-block; background: #0891b2; color: #fff; padding: 5px 14px;
+  border-radius: 20px; font-size: 11px; font-weight: 700; letter-spacing: 1.2px; }
+h1 { color: #0e7490; font-size: 26px; font-weight: 700; margin: 12px 0 24px; }
+h2 { color: #0e7490; font-size: 17px; font-weight: 600;
+  margin: 28px 0 8px; padding-bottom: 6px; border-bottom: 1px solid #cffafe; }
+h2 .n { display: inline-block; background: #ecfeff; color: #0e7490;
+  width: 26px; height: 26px; line-height: 26px; text-align: center;
+  border-radius: 50%; font-size: 13px; margin-right: 8px; }
+p { margin: 6px 0; }
+pre { background: #f8fafc; color: #0f172a; border-left: 3px solid #0891b2;
+  padding: 12px 16px; border-radius: 4px; overflow-x: auto; font-size: 13.5px;
+  font-family: "Consolas", "Monaco", monospace; line-height: 1.55; margin: 10px 0; }
+pre .c { color: #64748b; font-style: italic; }
+pre .k { color: #0891b2; font-weight: 600; }
+code.i { background: #ecfeff; color: #0e7490; padding: 2px 6px;
+  border-radius: 3px; font-family: "Consolas", monospace; font-size: 90%; }
+.warn { background: #fef2f2; border-left: 4px solid #dc2626; padding: 10px 14px;
+  border-radius: 4px; color: #7f1d1d; font-size: 14px; margin: 12px 0; }
+.warn strong { color: #991b1b; }
+</style></head><body>
+
+<span class="cat">RÉSEAU &middot; ANALYSE</span>
+<h1>Wireshark — Troubleshoot réseau</h1>
+
+<h2><span class="n">1</span>Choisir l'interface de capture</h2>
+<pre>Wireshark → Capture → Options
+  Sélectionner l'interface active (celle qui a du trafic)
+  Cocher "Promiscuous mode" (voit aussi les paquets qui ne sont pas pour nous)</pre>
+
+<h2><span class="n">2</span>Capture filter (avant capture — BPF syntax)</h2>
+<pre>host 192.168.1.10                    <span class="c"># uniquement cet hôte</span>
+net 192.168.1.0/24                    <span class="c"># réseau entier</span>
+port 443                              <span class="c"># port spécifique</span>
+tcp port 80 or tcp port 443           <span class="c"># deux ports</span>
+not broadcast and not multicast       <span class="c"># réduire le bruit</span></pre>
+
+<h2><span class="n">3</span>Display filter (après capture)</h2>
+<pre>ip.addr == 192.168.1.10
+ip.src == 192.168.1.10 and ip.dst == 8.8.8.8
+tcp.port == 443
+http.request.method == "POST"
+dns.qry.name contains "google"
+tcp.flags.reset == 1                  <span class="c"># RST uniquement</span>
+tcp.analysis.retransmission            <span class="c"># retransmissions détectées</span></pre>
+
+<h2><span class="n">4</span>Analyser un handshake TCP</h2>
+<pre>Filtre : tcp.stream eq 0
+Suivre : clic droit sur un paquet → Follow → TCP Stream
+
+À vérifier :
+  [SYN] → [SYN, ACK] → [ACK]     <span class="c"># handshake normal</span>
+  [SYN] → [RST, ACK]              <span class="c"># service fermé / firewalled</span>
+  [SYN] → pas de réponse          <span class="c"># drop par firewall</span></pre>
+
+<h2><span class="n">5</span>Détecter des retransmissions (lenteurs)</h2>
+<pre>Filtre : tcp.analysis.retransmission
+
+Statistiques → Expert Information
+  Warnings : Duplicate ACK, Fast retransmission
+  Notes    : Window Full, Zero Window</pre>
+
+<h2><span class="n">6</span>Latence entre 2 paquets</h2>
+<pre>Menu Statistics → TCP Stream Graphs → Round Trip Time
+  Voir les pics de RTT
+
+<span class="c"># Ou colonne dédiée : Wireshark → Preferences → Columns → +
+# Field type : Delta time displayed</span></pre>
+
+<h2><span class="n">7</span>Analyser un DNS</h2>
+<pre>Filtres :
+  dns
+  dns.flags.response == 0            <span class="c"># requêtes seulement</span>
+  dns.flags.rcode != 0                <span class="c"># erreurs</span>
+  dns.qry.name == "srv-web.monlab.local"</pre>
+
+<h2><span class="n">8</span>Analyser HTTP / HTTPS (SNI)</h2>
+<pre>http.request.uri
+http.response.code == 500
+tls.handshake.extensions_server_name  <span class="c"># SNI (nom du site visé en HTTPS)</span></pre>
+
+<h2><span class="n">9</span>Extraire des fichiers transférés</h2>
+<pre>File → Export Objects → HTTP / SMB / FTP
+  → Liste des objets transférés → Save All</pre>
+
+<h2><span class="n">10</span>Capture depuis un poste sans GUI (tshark)</h2>
+<pre><span class="c"># Capture 60 secondes, filtrée</span>
+<span class="k">sudo</span> tshark -i eth0 -f "host 192.168.1.10" -a duration:60 -w capture.pcap
+
+<span class="c"># Lecture avec filtre display</span>
+tshark -r capture.pcap -Y "http.request" -T fields \
+  -e ip.src -e http.host -e http.request.uri</pre>
+
+<h2><span class="n">11</span>Capture à distance (SSH + Wireshark)</h2>
+<pre>ssh user@srv-distant "sudo tcpdump -U -s0 -w - not port 22" | wireshark -k -i -</pre>
+
+<div class="warn">
+<strong>CONFIDENTIALITÉ</strong> — Une capture peut contenir des mots de passe (HTTP Basic, FTP, Telnet), des tokens, des cookies. Traiter les .pcap comme des fichiers sensibles : chiffrer au repos, supprimer après analyse, ne jamais partager en clair.
+</div>
+
+</body></html>

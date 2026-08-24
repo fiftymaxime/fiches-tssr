@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Fiche - GPO essentielles de sécurité</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    max-width: 820px; margin: 32px auto; padding: 0 26px;
+    background: #ffffff; color: #1e293b; line-height: 1.6; }
+  .cat { display: inline-block; background: #0891b2; color: #fff;
+    padding: 5px 14px; border-radius: 20px;
+    font-size: 11px; font-weight: 700; letter-spacing: 1.2px; }
+  h1 { color: #0e7490; font-size: 26px; font-weight: 700; margin: 12px 0 24px; }
+  h2 { color: #0e7490; font-size: 17px; font-weight: 600;
+    margin: 28px 0 8px; padding-bottom: 6px; border-bottom: 1px solid #cffafe; }
+  h2 .n { display: inline-block; background: #ecfeff; color: #0e7490;
+    width: 26px; height: 26px; line-height: 26px; text-align: center;
+    border-radius: 50%; font-size: 13px; margin-right: 8px; }
+  h3 { color: #0891b2; font-size: 14px; font-weight: 600;
+    margin: 26px 0 6px; text-transform: uppercase; letter-spacing: 0.8px; }
+  p { margin: 6px 0; }
+  pre { background: #f8fafc; color: #0f172a; border-left: 3px solid #0891b2;
+    padding: 12px 16px; border-radius: 4px; overflow-x: auto; font-size: 13.5px;
+    font-family: "Consolas", "Monaco", "Courier New", monospace;
+    line-height: 1.55; margin: 10px 0; }
+  pre .c { color: #64748b; font-style: italic; }
+  pre .k { color: #0891b2; font-weight: 600; }
+  code.i { background: #ecfeff; color: #0e7490; padding: 2px 6px;
+    border-radius: 3px; font-family: "Consolas", monospace; font-size: 90%; }
+  .warn { background: #fef2f2; border-left: 4px solid #dc2626;
+    padding: 10px 14px; border-radius: 4px; color: #7f1d1d; font-size: 14px; margin: 12px 0; }
+  .warn strong { color: #991b1b; }
+</style>
+</head>
+<body>
+
+<span class="cat">WINDOWS SERVER &middot; GPO AD</span>
+<h1>GPO essentielles de sécurité</h1>
+
+<p>À appliquer via <em>gpmc.msc</em>. Politiques mot de passe/verrouillage compte = <strong>au niveau du domaine</strong>. Les autres = OU dédiée aux postes.</p>
+
+<h2><span class="n">1</span>Politique de mots de passe (niveau domaine)</h2>
+<pre>Configuration ordinateur → Stratégies → Paramètres Windows
+  → Paramètres de sécurité → Stratégies de comptes → Stratégie de mot de passe
+
+Longueur minimale                    : 14 caractères
+Complexité activée                   : Activé
+Durée maximale                       : 90 jours
+Durée minimale                       : 1 jour
+Conserver l'historique               : 24 mots de passe
+Stocker en réversible                : Désactivé</pre>
+
+<h2><span class="n">2</span>Verrouillage de compte</h2>
+<pre>...→ Stratégie de verrouillage du compte
+
+Seuil de verrouillage                : 5 tentatives
+Durée du verrouillage                : 15 minutes
+Réinitialisation du compteur         : 15 minutes</pre>
+
+<h2><span class="n">3</span>Verrouillage session inactive</h2>
+<pre>Configuration ordinateur → Modèles d'administration
+  → Panneau de configuration → Personnalisation
+
+Activer l'écran de veille           : Activé
+Protéger par mot de passe            : Activé
+Délai (secondes)                     : 600</pre>
+
+<h2><span class="n">4</span>Bloquer les périphériques USB de stockage</h2>
+<pre>Configuration ordinateur → Modèles d'administration
+  → Système → Accès au stockage amovible
+
+Disques amovibles : Refuser accès en écriture : Activé
+Disques amovibles : Refuser accès en lecture  : Activé (si besoin strict)</pre>
+
+<h2><span class="n">5</span>PowerShell logging (indispensable pour SOC/audit)</h2>
+<pre>Configuration ordinateur → Modèles d'administration
+  → Composants Windows → Windows PowerShell
+
+Activer la journalisation des modules  : Activé (Module : *)
+Activer la journalisation des blocs    : Activé
+Activer la transcription               : Activé
+   Chemin de transcription             : \\SRV-LOG\PS-Logs$</pre>
+
+<h2><span class="n">6</span>LSA Protection (contre vol de credentials type Mimikatz)</h2>
+<pre>Configuration ordinateur → Modèles d'administration
+  → Système → Autorité de sécurité locale
+
+Configurer LSASS en tant que processus protégé : Activé (Enabled with UEFI Lock)</pre>
+
+<h2><span class="n">7</span>Désactiver SMBv1 (vulnérable, exploité par EternalBlue/WannaCry)</h2>
+<p>Via GPO Registry ou en local sur chaque poste :</p>
+<pre>Disable-WindowsOptionalFeature -Online -FeatureName SMB1Protocol</pre>
+
+<h2><span class="n">8</span>Restreindre NTLM (utiliser Kerberos uniquement)</h2>
+<pre>Configuration ordinateur → Stratégies → Paramètres Windows
+  → Paramètres de sécurité → Stratégies locales → Options de sécurité
+
+Sécurité réseau : Restreindre NTLM : Trafic NTLM entrant
+  → Refuser tous les comptes de domaine</pre>
+
+<h2><span class="n">9</span>Appliquer et vérifier</h2>
+<pre>gpupdate /force
+
+<span class="c"># Voir les GPO appliquées sur le poste</span>
+gpresult /r
+gpresult /h C:\rapport-gpo.html   <span class="c"># rapport HTML complet</span></pre>
+
+<div class="warn">
+<strong>MÉTHODE</strong> — Toujours tester une GPO sur une <strong>OU pilote</strong> (1-2 postes) avant de généraliser. Une GPO mal ciblée peut bloquer tout le parc (ex : désactivation NTLM sur des vieilles imprimantes).
+</div>
+
+</body>
+</html>

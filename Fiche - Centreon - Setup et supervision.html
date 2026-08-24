@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="UTF-8"><title>Fiche - Centreon</title>
+<style>
+* { box-sizing: border-box; }
+body { font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  max-width: 820px; margin: 32px auto; padding: 0 26px;
+  background: #fff; color: #1e293b; line-height: 1.6; }
+.cat { display: inline-block; background: #0891b2; color: #fff; padding: 5px 14px;
+  border-radius: 20px; font-size: 11px; font-weight: 700; letter-spacing: 1.2px; }
+h1 { color: #0e7490; font-size: 26px; font-weight: 700; margin: 12px 0 24px; }
+h2 { color: #0e7490; font-size: 17px; font-weight: 600;
+  margin: 28px 0 8px; padding-bottom: 6px; border-bottom: 1px solid #cffafe; }
+h2 .n { display: inline-block; background: #ecfeff; color: #0e7490;
+  width: 26px; height: 26px; line-height: 26px; text-align: center;
+  border-radius: 50%; font-size: 13px; margin-right: 8px; }
+p { margin: 6px 0; }
+pre { background: #f8fafc; color: #0f172a; border-left: 3px solid #0891b2;
+  padding: 12px 16px; border-radius: 4px; overflow-x: auto; font-size: 13.5px;
+  font-family: "Consolas", "Monaco", monospace; line-height: 1.55; margin: 10px 0; }
+pre .c { color: #64748b; font-style: italic; }
+pre .k { color: #0891b2; font-weight: 600; }
+code.i { background: #ecfeff; color: #0e7490; padding: 2px 6px;
+  border-radius: 3px; font-family: "Consolas", monospace; font-size: 90%; }
+.warn { background: #fef2f2; border-left: 4px solid #dc2626; padding: 10px 14px;
+  border-radius: 4px; color: #7f1d1d; font-size: 14px; margin: 12px 0; }
+.warn strong { color: #991b1b; }
+</style></head><body>
+
+<span class="cat">SUPERVISION &middot; CENTREON</span>
+<h1>Centreon — Setup et supervision d'un hôte</h1>
+
+<p>Méthode la plus rapide : ISO Centreon Community (basée sur AlmaLinux 9). Prévoir VM 4 vCPU / 8 Go / 80 Go.</p>
+
+<h2><span class="n">1</span>Installation depuis l'ISO</h2>
+<pre>Télécharger : https://download.centreon.com/
+  Version : Centreon Central + BAM 24.x
+
+Boot sur l'ISO → suivre l'assistant :
+  Type d'install : Central with database
+  Timezone       : Europe/Paris
+  Root password  : (fort)
+Reboot</pre>
+
+<h2><span class="n">2</span>Configuration initiale web</h2>
+<pre>http://IP_CENTREON/centreon
+
+Étape 1 : chemins par défaut → Next
+Étape 2 : broker → Next
+Étape 3 : admin user - définir centreon-admin / MotDePasse
+Étape 4 : DB - MariaDB root password
+Étape 5 : install modules → Next
+Étape 6 : Finalize</pre>
+
+<h2><span class="n">3</span>Login et premiers réglages</h2>
+<pre>Login : admin / (mot de passe défini)
+Administration → Parameters → General : ajuster timezone, langue FR</pre>
+
+<h2><span class="n">4</span>Installer le collecteur (Poller) sur les cibles</h2>
+<pre><span class="c"># Sur chaque poller distant (ou en local sur le Central)</span>
+<span class="k">dnf</span> install centreon-poller -y</pre>
+
+<h2><span class="n">5</span>Installer l'agent SNMP sur un hôte Linux</h2>
+<pre><span class="c"># Sur le serveur à monitorer</span>
+<span class="k">sudo</span> apt install snmpd -y
+<span class="k">sudo</span> nano /etc/snmp/snmpd.conf
+
+agentAddress udp:161
+rocommunity ma_communaute IP_CENTREON
+
+<span class="k">sudo</span> systemctl restart snmpd</pre>
+
+<h2><span class="n">6</span>Ajouter un hôte dans Centreon</h2>
+<pre>Configuration → Hosts → Add
+  Name          : srv-web-01
+  Alias         : Serveur web
+  IP address    : 192.168.1.20
+  Templates     : OS-Linux-SNMP-custom
+  SNMP version  : 2c
+  Community     : ma_communaute
+  Save</pre>
+
+<h2><span class="n">7</span>Ajouter des services à surveiller</h2>
+<pre>Configuration → Services → Add
+
+Ex : CPU
+  Description : CPU
+  Linked with hosts : srv-web-01
+  Template : OS-Linux-Snmp-Cpu-custom
+
+Répéter pour : Memory, Disk-/, Ping, HTTP, Uptime</pre>
+
+<h2><span class="n">8</span>Générer et pousser la config vers le poller</h2>
+<pre>Configuration → Pollers → Export configuration
+  ✔ Generate Configuration Files
+  ✔ Run monitoring engine debug
+  ✔ Move Export Files
+  ✔ Restart Monitoring Engine
+  Export</pre>
+
+<h2><span class="n">9</span>Vérifier la remontée</h2>
+<pre>Monitoring → Hosts → doit passer en UP (vert)
+Monitoring → Services → doit passer en OK
+
+<span class="c"># Si problème :</span>
+<span class="k">tail</span> -f /var/log/centreon-engine/centreon-engine.log</pre>
+
+<h2><span class="n">10</span>Configurer les notifications</h2>
+<pre>Configuration → Users → admin
+  Notifications enabled : Yes
+  Email                : admin@monlab.local
+  Notify on            : Down, Unreachable, Recovery
+  Time period          : 24x7
+
+Configuration → Notifications → Contact groups
+  → assigner l'admin au bon host/service</pre>
+
+<h2><span class="n">11</span>Cartographie temps réel</h2>
+<pre>Monitoring → Map
+  Créer une vue avec les hôtes critiques positionnés
+  Statuts en direct visibles sur écran mural (NOC)</pre>
+
+<div class="warn">
+<strong>APRÈS CHAQUE MODIF</strong> — Toute modification de config (host, service, template) doit être suivie d'un <em>Export configuration</em> avec redémarrage moteur, sinon les changements ne sont pas actifs.
+</div>
+
+</body></html>

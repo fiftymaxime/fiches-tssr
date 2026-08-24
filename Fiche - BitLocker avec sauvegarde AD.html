@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Fiche - BitLocker avec sauvegarde AD</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    max-width: 820px; margin: 32px auto; padding: 0 26px;
+    background: #ffffff; color: #1e293b; line-height: 1.6; }
+  .cat { display: inline-block; background: #0891b2; color: #fff;
+    padding: 5px 14px; border-radius: 20px;
+    font-size: 11px; font-weight: 700; letter-spacing: 1.2px; }
+  h1 { color: #0e7490; font-size: 26px; font-weight: 700; margin: 12px 0 24px; }
+  h2 { color: #0e7490; font-size: 17px; font-weight: 600;
+    margin: 28px 0 8px; padding-bottom: 6px; border-bottom: 1px solid #cffafe; }
+  h2 .n { display: inline-block; background: #ecfeff; color: #0e7490;
+    width: 26px; height: 26px; line-height: 26px; text-align: center;
+    border-radius: 50%; font-size: 13px; margin-right: 8px; }
+  h3 { color: #0891b2; font-size: 14px; font-weight: 600;
+    margin: 26px 0 6px; text-transform: uppercase; letter-spacing: 0.8px; }
+  p { margin: 6px 0; }
+  pre { background: #f8fafc; color: #0f172a; border-left: 3px solid #0891b2;
+    padding: 12px 16px; border-radius: 4px; overflow-x: auto; font-size: 13.5px;
+    font-family: "Consolas", "Monaco", "Courier New", monospace;
+    line-height: 1.55; margin: 10px 0; }
+  pre .c { color: #64748b; font-style: italic; }
+  pre .k { color: #0891b2; font-weight: 600; }
+  code.i { background: #ecfeff; color: #0e7490; padding: 2px 6px;
+    border-radius: 3px; font-family: "Consolas", monospace; font-size: 90%; }
+  .warn { background: #fef2f2; border-left: 4px solid #dc2626;
+    padding: 10px 14px; border-radius: 4px; color: #7f1d1d; font-size: 14px; margin: 12px 0; }
+  .warn strong { color: #991b1b; }
+</style>
+</head>
+<body>
+
+<span class="cat">WINDOWS &middot; CHIFFREMENT ENDPOINT</span>
+<h1>BitLocker – Chiffrement disque + sauvegarde AD</h1>
+
+<h3>Étape préalable — GPO obligatoire avant tout déploiement</h3>
+
+<h2><span class="n">1</span>Créer une GPO BitLocker</h2>
+<p><em>gpmc.msc</em> → GPO liée à l'OU des postes → Éditer :</p>
+<pre>Configuration ordinateur → Modèles d'administration
+  → Composants Windows → Chiffrement de lecteur BitLocker
+  → Lecteurs du système d'exploitation
+
+Activer :
+  ✔ Choisir la manière dont les lecteurs BitLocker peuvent être récupérés
+      - Enregistrer les informations dans les services AD DS
+      - Ne pas activer BitLocker tant que les informations ne sont pas
+        stockées dans AD DS</pre>
+
+<h2><span class="n">2</span>Appliquer la GPO sur le poste</h2>
+<pre>gpupdate /force</pre>
+
+<h3>Côté poste client</h3>
+
+<h2><span class="n">3</span>Vérifier le TPM</h2>
+<pre>Get-Tpm</pre>
+<p>Vérifier : <code class="i">TpmPresent = True</code>, <code class="i">TpmReady = True</code>. Sinon activer le TPM dans le BIOS/UEFI.</p>
+
+<h2><span class="n">4</span>Activer BitLocker (PowerShell admin)</h2>
+<pre>Enable-BitLocker -MountPoint "C:" `
+  -EncryptionMethod XtsAes256 `
+  -TpmProtector `
+  -UsedSpaceOnly</pre>
+
+<h2><span class="n">5</span>Sauvegarder la clé de récupération dans l'AD</h2>
+<pre>$key = (Get-BitLockerVolume -MountPoint "C:").KeyProtector |
+       Where-Object {$_.KeyProtectorType -eq "RecoveryPassword"}
+
+Backup-BitLockerKeyProtector -MountPoint "C:" `
+  -KeyProtectorId $key.KeyProtectorId</pre>
+
+<h2><span class="n">6</span>Vérifier le statut du chiffrement</h2>
+<pre>Get-BitLockerVolume -MountPoint "C:"
+manage-bde -status</pre>
+
+<h3>Côté helpdesk — récupération d'un poste bloqué</h3>
+
+<h2><span class="n">7</span>Retrouver la clé dans l'AD</h2>
+<pre>Get-ADObject -Filter {objectClass -eq "msFVE-RecoveryInformation"} `
+  -SearchBase "CN=PC-COMPTA-01,OU=Ordinateurs,DC=monlab,DC=local" `
+  -Properties msFVE-RecoveryPassword |
+  Format-List Name,msFVE-RecoveryPassword</pre>
+
+<p>Ou par interface graphique : <em>Utilisateurs et ordinateurs AD</em> → clic droit sur l'ordinateur → onglet <strong>Récupération BitLocker</strong>.</p>
+
+<h2><span class="n">8</span>Suspendre / Reprendre / Décrypter</h2>
+<pre><span class="c"># Suspendre (avant maj BIOS, changement matériel)</span>
+Suspend-BitLocker -MountPoint "C:" -RebootCount 1
+
+<span class="c"># Reprendre</span>
+Resume-BitLocker -MountPoint "C:"
+
+<span class="c"># Décrypter complètement (rollback)</span>
+Disable-BitLocker -MountPoint "C:"</pre>
+
+<div class="warn">
+<strong>PIÈGE FRÉQUENT</strong> — Une mise à jour BIOS/UEFI, un changement de disque ou de carte mère déclenche l'écran de récupération BitLocker au démarrage. Toujours <em>suspendre</em> BitLocker avant toute opération matérielle, ou avoir la clé de récupération sous la main.
+</div>
+
+</body>
+</html>

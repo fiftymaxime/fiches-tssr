@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Fiche - PowerShell - Création massive utilisateurs AD</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    max-width: 820px; margin: 32px auto; padding: 0 26px;
+    background: #ffffff; color: #1e293b; line-height: 1.6; }
+  .cat { display: inline-block; background: #0891b2; color: #fff;
+    padding: 5px 14px; border-radius: 20px;
+    font-size: 11px; font-weight: 700; letter-spacing: 1.2px; }
+  h1 { color: #0e7490; font-size: 26px; font-weight: 700; margin: 12px 0 24px; }
+  h2 { color: #0e7490; font-size: 17px; font-weight: 600;
+    margin: 28px 0 8px; padding-bottom: 6px; border-bottom: 1px solid #cffafe; }
+  h2 .n { display: inline-block; background: #ecfeff; color: #0e7490;
+    width: 26px; height: 26px; line-height: 26px; text-align: center;
+    border-radius: 50%; font-size: 13px; margin-right: 8px; }
+  p { margin: 6px 0; }
+  pre { background: #f8fafc; color: #0f172a; border-left: 3px solid #0891b2;
+    padding: 12px 16px; border-radius: 4px; overflow-x: auto; font-size: 13.5px;
+    font-family: "Consolas", "Monaco", "Courier New", monospace;
+    line-height: 1.55; margin: 10px 0; }
+  pre .c { color: #64748b; font-style: italic; }
+  pre .k { color: #0891b2; font-weight: 600; }
+  code.i { background: #ecfeff; color: #0e7490; padding: 2px 6px;
+    border-radius: 3px; font-family: "Consolas", monospace; font-size: 90%; }
+  .warn { background: #fef2f2; border-left: 4px solid #dc2626;
+    padding: 10px 14px; border-radius: 4px; color: #7f1d1d; font-size: 14px; margin: 12px 0; }
+  .warn strong { color: #991b1b; }
+</style>
+</head>
+<body>
+
+<span class="cat">WINDOWS SERVER &middot; SCRIPTING AD</span>
+<h1>PowerShell – Création massive d'utilisateurs AD depuis un CSV</h1>
+
+<h2><span class="n">1</span>Préparer le fichier CSV</h2>
+<p>Créer <code class="i">C:\Scripts\users.csv</code> avec un séparateur <strong>;</strong> :</p>
+<pre>Nom;Prenom;SamAccountName;OU;Groupe
+Dupont;Jean;jdupont;OU=Compta,DC=monlab,DC=local;GG_Compta
+Martin;Sophie;smartin;OU=RH,DC=monlab,DC=local;GG_RH
+Durand;Paul;pdurand;OU=IT,DC=monlab,DC=local;GG_IT</pre>
+
+<h2><span class="n">2</span>Créer le script <code class="i">Import-Users.ps1</code></h2>
+<pre>Import-Module ActiveDirectory
+
+$csv = Import-Csv -Path "C:\Scripts\users.csv" -Delimiter ";"
+$log = "C:\Scripts\import-$(Get-Date -Format 'yyyyMMdd-HHmm').log"
+$passwords = @()
+
+foreach ($u in $csv) {
+
+    <span class="c"># Génération d'un mot de passe aléatoire 14 caractères, 3 spéciaux</span>
+    Add-Type -AssemblyName System.Web
+    $pwd = [System.Web.Security.Membership]::GeneratePassword(14,3)
+
+    try {
+        New-ADUser `
+            -Name "$($u.Prenom) $($u.Nom)" `
+            -GivenName $u.Prenom -Surname $u.Nom `
+            -SamAccountName $u.SamAccountName `
+            -UserPrincipalName "$($u.SamAccountName)@monlab.local" `
+            -Path $u.OU `
+            -AccountPassword (ConvertTo-SecureString $pwd -AsPlainText -Force) `
+            -ChangePasswordAtLogon $true `
+            -Enabled $true `
+            -ErrorAction Stop
+
+        Add-ADGroupMember -Identity $u.Groupe -Members $u.SamAccountName
+
+        "$($u.SamAccountName);$pwd;OK" | Out-File $log -Append
+        $passwords += [pscustomobject]@{
+            User     = $u.SamAccountName
+            Password = $pwd
+        }
+        Write-Host "OK  : $($u.SamAccountName)" -ForegroundColor Green
+    }
+    catch {
+        "$($u.SamAccountName);;ERREUR - $($_.Exception.Message)" | Out-File $log -Append
+        Write-Host "ERR : $($u.SamAccountName) - $($_.Exception.Message)" -ForegroundColor Red
+    }
+}
+
+<span class="c"># Export des mots de passe pour transmission au helpdesk</span>
+$passwords | Export-Csv -Path "C:\Scripts\passwords.csv" `
+    -Delimiter ";" -NoTypeInformation -Encoding UTF8</pre>
+
+<h2><span class="n">3</span>Exécuter le script</h2>
+<pre>powershell -ExecutionPolicy Bypass -File C:\Scripts\Import-Users.ps1</pre>
+
+<h2><span class="n">4</span>Vérifier</h2>
+<pre><span class="c"># Comptes créés dans une OU</span>
+Get-ADUser -Filter * -SearchBase "OU=Compta,DC=monlab,DC=local"
+
+<span class="c"># Erreurs dans le log</span>
+Get-Content C:\Scripts\import-*.log | Select-String "ERREUR"</pre>
+
+<h2><span class="n">5</span>Transmettre les mots de passe de manière sécurisée</h2>
+<p>Ne <strong>jamais</strong> envoyer <code class="i">passwords.csv</code> par mail en clair. Chiffrer avec 7-Zip et transmettre le mot de passe par un canal séparé (téléphone, SMS, coffre-fort d'équipe) :</p>
+<pre>&amp; "C:\Program Files\7-Zip\7z.exe" a -tzip -mem=AES256 -p "C:\Scripts\pwd.zip" "C:\Scripts\passwords.csv"
+
+<span class="c"># Puis supprimer le CSV en clair</span>
+Remove-Item "C:\Scripts\passwords.csv" -Force</pre>
+
+<div class="warn">
+<strong>SÉCURITÉ</strong> — Le fichier <code class="i">passwords.csv</code> contient tous les mots de passe en clair. Le supprimer <strong>immédiatement</strong> après transmission chiffrée. En production : préférer un gestionnaire d'équipe (Bitwarden/Vaultwarden) qui génère un lien à usage unique par utilisateur.
+</div>
+
+</body>
+</html>

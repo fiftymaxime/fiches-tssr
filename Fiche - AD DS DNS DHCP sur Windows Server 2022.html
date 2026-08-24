@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Fiche - AD DS / DNS / DHCP sous Windows Server 2022</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    max-width: 820px; margin: 32px auto; padding: 0 26px;
+    background: #ffffff; color: #1e293b; line-height: 1.6;
+  }
+  .cat {
+    display: inline-block; background: #0891b2; color: #fff;
+    padding: 5px 14px; border-radius: 20px;
+    font-size: 11px; font-weight: 700; letter-spacing: 1.2px;
+  }
+  h1 {
+    color: #0e7490; font-size: 26px; font-weight: 700;
+    margin: 12px 0 24px;
+  }
+  h2 {
+    color: #0e7490; font-size: 17px; font-weight: 600;
+    margin: 28px 0 8px; padding-bottom: 6px;
+    border-bottom: 1px solid #cffafe;
+  }
+  h2 .n {
+    display: inline-block; background: #ecfeff; color: #0e7490;
+    width: 26px; height: 26px; line-height: 26px; text-align: center;
+    border-radius: 50%; font-size: 13px; margin-right: 8px;
+  }
+  h3 {
+    color: #0891b2; font-size: 14px; font-weight: 600;
+    margin: 26px 0 6px; text-transform: uppercase; letter-spacing: 0.8px;
+  }
+  p { margin: 6px 0; }
+  pre {
+    background: #f8fafc; color: #0f172a;
+    border-left: 3px solid #0891b2;
+    padding: 12px 16px; border-radius: 4px;
+    overflow-x: auto; font-size: 13.5px;
+    font-family: "Consolas", "Monaco", "Courier New", monospace;
+    line-height: 1.55; margin: 10px 0;
+  }
+  pre .c { color: #64748b; font-style: italic; }
+  pre .k { color: #0891b2; font-weight: 600; }
+  code.i {
+    background: #ecfeff; color: #0e7490; padding: 2px 6px;
+    border-radius: 3px; font-family: "Consolas", monospace; font-size: 90%;
+  }
+  .warn {
+    background: #fef2f2; border-left: 4px solid #dc2626;
+    padding: 10px 14px; border-radius: 4px;
+    color: #7f1d1d; font-size: 14px; margin: 12px 0;
+  }
+  .warn strong { color: #991b1b; }
+</style>
+</head>
+<body>
+
+<span class="cat">WINDOWS SERVER 2022</span>
+<h1>Serveur AD DS / DNS / DHCP</h1>
+
+<p>À exécuter dans <strong>PowerShell en administrateur</strong> (clic droit → Exécuter en tant qu'administrateur).</p>
+
+<h3>Phase 1 — Préparation</h3>
+
+<h2><span class="n">1</span>Renommer le serveur</h2>
+<pre><span class="k">Rename-Computer</span> -NewName "SRV-AD01" -Restart</pre>
+
+<h2><span class="n">2</span>Attribuer une IP fixe</h2>
+<pre><span class="k">New-NetIPAddress</span> -InterfaceAlias "Ethernet" `
+  -IPAddress 192.168.1.10 -PrefixLength 24 `
+  -DefaultGateway 192.168.1.1
+
+<span class="k">Set-DnsClientServerAddress</span> -InterfaceAlias "Ethernet" `
+  -ServerAddresses 127.0.0.1</pre>
+
+<h3>Phase 2 — Active Directory + DNS</h3>
+
+<h2><span class="n">3</span>Installer le rôle AD DS</h2>
+<pre><span class="k">Install-WindowsFeature</span> AD-Domain-Services -IncludeManagementTools</pre>
+
+<h2><span class="n">4</span>Promouvoir en contrôleur de domaine (nouvelle forêt)</h2>
+<pre><span class="k">Install-ADDSForest</span> `
+  -DomainName "monlab.local" `
+  -DomainNetbiosName "MONLAB" `
+  -InstallDNS `
+  -ForestMode "WinThreshold" `
+  -DomainMode "WinThreshold"</pre>
+<div class="warn">
+<strong>ATTENTION</strong> — Noter le mot de passe DSRM demandé, il sert à réparer l'AD en cas de panne. Le serveur redémarre à la fin.
+</div>
+
+<h2><span class="n">5</span>Vérifier AD et DNS</h2>
+<pre><span class="k">Get-ADDomain</span>
+<span class="k">Get-Service</span> ADWS,KDC,Netlogon,DNS
+nslookup monlab.local</pre>
+
+<h3>Phase 3 — DHCP</h3>
+
+<h2><span class="n">6</span>Installer le rôle DHCP</h2>
+<pre><span class="k">Install-WindowsFeature</span> DHCP -IncludeManagementTools</pre>
+
+<h2><span class="n">7</span>Autoriser le DHCP dans l'AD</h2>
+<pre><span class="k">Add-DhcpServerInDC</span> -DnsName "SRV-AD01.monlab.local" -IPAddress 192.168.1.10
+<span class="k">Add-DhcpServerSecurityGroup</span>
+<span class="k">Restart-Service</span> dhcpserver</pre>
+
+<h2><span class="n">8</span>Créer une étendue</h2>
+<pre><span class="k">Add-DhcpServerv4Scope</span> -Name "LAN-Users" `
+  -StartRange 192.168.1.100 -EndRange 192.168.1.200 `
+  -SubnetMask 255.255.255.0 -State Active
+
+<span class="k">Set-DhcpServerv4OptionValue</span> -ScopeId 192.168.1.0 `
+  -Router 192.168.1.1 `
+  -DnsServer 192.168.1.10 `
+  -DnsDomain "monlab.local"</pre>
+
+<h2><span class="n">9</span>(Optionnel) Réserver une IP</h2>
+<pre><span class="k">Add-DhcpServerv4Reservation</span> -ScopeId 192.168.1.0 `
+  -IPAddress 192.168.1.50 -ClientId "AA-BB-CC-11-22-33" `
+  -Description "Imprimante compta"</pre>
+
+<h2><span class="n">10</span>Vérifier le DHCP</h2>
+<pre><span class="k">Get-DhcpServerv4Scope</span>
+<span class="k">Get-DhcpServerv4Lease</span> -ScopeId 192.168.1.0</pre>
+
+<h3>Phase 4 — OU + utilisateur (exemple)</h3>
+
+<h2><span class="n">11</span>Créer une OU et un utilisateur</h2>
+<pre><span class="k">New-ADOrganizationalUnit</span> -Name "Utilisateurs_Compta" `
+  -Path "DC=monlab,DC=local"
+
+<span class="k">New-ADUser</span> -Name "Jean Dupont" -SamAccountName "jdupont" `
+  -UserPrincipalName "jdupont@monlab.local" `
+  -Path "OU=Utilisateurs_Compta,DC=monlab,DC=local" `
+  -AccountPassword (<span class="k">ConvertTo-SecureString</span> "P@ssw0rd!" -AsPlainText -Force) `
+  -Enabled $true</pre>
+
+<h3>Test client</h3>
+<p>PC en DHCP → doit obtenir une IP 192.168.1.100-200 → <code class="i">ipconfig /all</code> pour vérifier le DNS → joindre le domaine <strong>monlab.local</strong> → se connecter avec <code class="i">MONLAB\jdupont</code>.</p>
+
+</body>
+</html>

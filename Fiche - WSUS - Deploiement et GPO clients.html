@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="UTF-8"><title>Fiche - WSUS</title>
+<style>
+* { box-sizing: border-box; }
+body { font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  max-width: 820px; margin: 32px auto; padding: 0 26px;
+  background: #fff; color: #1e293b; line-height: 1.6; }
+.cat { display: inline-block; background: #0891b2; color: #fff; padding: 5px 14px;
+  border-radius: 20px; font-size: 11px; font-weight: 700; letter-spacing: 1.2px; }
+h1 { color: #0e7490; font-size: 26px; font-weight: 700; margin: 12px 0 24px; }
+h2 { color: #0e7490; font-size: 17px; font-weight: 600;
+  margin: 28px 0 8px; padding-bottom: 6px; border-bottom: 1px solid #cffafe; }
+h2 .n { display: inline-block; background: #ecfeff; color: #0e7490;
+  width: 26px; height: 26px; line-height: 26px; text-align: center;
+  border-radius: 50%; font-size: 13px; margin-right: 8px; }
+p { margin: 6px 0; }
+pre { background: #f8fafc; color: #0f172a; border-left: 3px solid #0891b2;
+  padding: 12px 16px; border-radius: 4px; overflow-x: auto; font-size: 13.5px;
+  font-family: "Consolas", "Monaco", monospace; line-height: 1.55; margin: 10px 0; }
+pre .c { color: #64748b; font-style: italic; }
+pre .k { color: #0891b2; font-weight: 600; }
+code.i { background: #ecfeff; color: #0e7490; padding: 2px 6px;
+  border-radius: 3px; font-family: "Consolas", monospace; font-size: 90%; }
+.warn { background: #fef2f2; border-left: 4px solid #dc2626; padding: 10px 14px;
+  border-radius: 4px; color: #7f1d1d; font-size: 14px; margin: 12px 0; }
+.warn strong { color: #991b1b; }
+</style></head><body>
+
+<span class="cat">WINDOWS SERVER &middot; PATCH MANAGEMENT</span>
+<h1>WSUS — Serveur de mises à jour interne</h1>
+
+<p>Prérequis : Windows Server, 200+ Go d'espace disque (stockage des maj), .NET, IIS.</p>
+
+<h2><span class="n">1</span>Installer le rôle WSUS</h2>
+<pre>Install-WindowsFeature -Name UpdateServices -IncludeManagementTools</pre>
+
+<h2><span class="n">2</span>Configuration post-install</h2>
+<pre><span class="c"># Créer le dossier de stockage</span>
+New-Item -ItemType Directory -Path D:\WSUS
+
+<span class="c"># Configurer WSUS pour utiliser ce dossier</span>
+<span class="k">cd</span> "C:\Program Files\Update Services\Tools"
+.\WsusUtil.exe postinstall CONTENT_DIR=D:\WSUS</pre>
+
+<h2><span class="n">3</span>Assistant de configuration initiale</h2>
+<pre>Server Manager → Tools → Windows Server Update Services
+L'assistant se lance :
+  Upstream server : Microsoft Update
+  Proxy           : (si nécessaire)
+  Start Connecting → Next
+  Languages       : Français, Anglais (uncocher le reste)
+  Products        : Windows 10/11, Windows Server 2019/2022, Office (ce dont tu as besoin)
+  Classifications : Critical Updates, Security Updates, Definition Updates, Update Rollups
+  Sync Schedule   : Daily at 03:00
+  ✔ Begin initial synchronization</pre>
+
+<h2><span class="n">4</span>Attendre la synchronisation initiale</h2>
+<pre>Console WSUS → Synchronizations
+  Compter plusieurs heures (téléchargement des metadata + fichiers)</pre>
+
+<h2><span class="n">5</span>Créer des groupes d'ordinateurs</h2>
+<pre>Console WSUS → Computers → All Computers → Add Computer Group
+
+Créer par exemple :
+  - Pilotes (5-10 postes de test)
+  - Prod-Servers
+  - Prod-Postes-Bureautique
+  - Prod-Postes-Ateliers</pre>
+
+<h2><span class="n">6</span>Approuver des mises à jour (par groupe)</h2>
+<pre>Console WSUS → Updates → All Updates
+  Filtre : Approval = Unapproved / Status = Failed or Needed
+  Sélectionner les KB → clic droit → Approve
+  Pour "Pilotes" : Approved for Install
+  Pour "Prod..." : Not Approved (pour l'instant)</pre>
+
+<h2><span class="n">7</span>GPO client — pointer les postes vers WSUS</h2>
+<pre>gpmc.msc → nouvelle GPO liée au domaine ou aux OU postes
+
+Configuration ordinateur → Modèles d'administration
+  → Composants Windows → Windows Update
+
+Spécifier l'emplacement du service Microsoft Update intranet
+  ✔ Activé
+    Serveur de mise à jour intranet   : http://wsus.monlab.local:8530
+    Serveur intranet de statistiques  : http://wsus.monlab.local:8530
+
+Activer les mises à jour automatiques
+  ✔ Activé
+    Option 4 : Télécharger et planifier l'installation
+    Fréquence : Tous les jours à 03:00
+
+Autoriser l'orientation des cibles côté client
+  ✔ Activé
+    Nom du groupe cible : Pilotes    <span class="c"># doit correspondre au groupe WSUS</span></pre>
+
+<h2><span class="n">8</span>Forcer un check WSUS côté client</h2>
+<pre>gpupdate /force
+
+<span class="c"># Puis</span>
+wuauclt /detectnow /reportnow          <span class="c"># ancien</span>
+<span class="c"># Ou (Windows 10/11 / Server 2019+)</span>
+usoclient StartInteractiveScan</pre>
+
+<h2><span class="n">9</span>Vérifier qu'un poste remonte bien</h2>
+<pre>Console WSUS → Computers → &lt;groupe&gt; → doit apparaître avec :
+  - Dernier contact récent
+  - Statut de conformité (installées / requises / échouées)</pre>
+
+<h2><span class="n">10</span>Nettoyage régulier (indispensable)</h2>
+<pre>Console WSUS → Options → Server Cleanup Wizard
+  Cocher :
+    ✔ Unused updates and update revisions
+    ✔ Computers not contacting the server (30j+)
+    ✔ Unneeded update files
+    ✔ Expired updates
+    ✔ Superseded updates
+  Lancer une fois par mois</pre>
+
+<h2><span class="n">11</span>Rapports</h2>
+<pre>Console WSUS → Reports
+  - Update Status Summary
+  - Computer Status Summary
+  → Export PDF/Excel pour reporting sécurité</pre>
+
+<div class="warn">
+<strong>PIÈGE FRÉQUENT</strong> — La base WSUSDB (Windows Internal Database) grossit énormément. Faire un <em>Server Cleanup Wizard</em> mensuel + réindexer la base (script <code class="i">WsusDBMaintenance.sql</code> publié par Microsoft) sinon la console devient inutilisable.
+</div>
+
+</body></html>

@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="UTF-8"><title>Fiche - IPsec S2S pfSense</title>
+<style>
+* { box-sizing: border-box; }
+body { font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  max-width: 820px; margin: 32px auto; padding: 0 26px;
+  background: #fff; color: #1e293b; line-height: 1.6; }
+.cat { display: inline-block; background: #0891b2; color: #fff; padding: 5px 14px;
+  border-radius: 20px; font-size: 11px; font-weight: 700; letter-spacing: 1.2px; }
+h1 { color: #0e7490; font-size: 26px; font-weight: 700; margin: 12px 0 24px; }
+h2 { color: #0e7490; font-size: 17px; font-weight: 600;
+  margin: 28px 0 8px; padding-bottom: 6px; border-bottom: 1px solid #cffafe; }
+h2 .n { display: inline-block; background: #ecfeff; color: #0e7490;
+  width: 26px; height: 26px; line-height: 26px; text-align: center;
+  border-radius: 50%; font-size: 13px; margin-right: 8px; }
+h3 { color: #0891b2; font-size: 14px; font-weight: 600;
+  margin: 26px 0 6px; text-transform: uppercase; letter-spacing: 0.8px; }
+p { margin: 6px 0; }
+pre { background: #f8fafc; color: #0f172a; border-left: 3px solid #0891b2;
+  padding: 12px 16px; border-radius: 4px; overflow-x: auto; font-size: 13.5px;
+  font-family: "Consolas", "Monaco", monospace; line-height: 1.55; margin: 10px 0; }
+pre .c { color: #64748b; font-style: italic; }
+pre .k { color: #0891b2; font-weight: 600; }
+code.i { background: #ecfeff; color: #0e7490; padding: 2px 6px;
+  border-radius: 3px; font-family: "Consolas", monospace; font-size: 90%; }
+.warn { background: #fef2f2; border-left: 4px solid #dc2626; padding: 10px 14px;
+  border-radius: 4px; color: #7f1d1d; font-size: 14px; margin: 12px 0; }
+.warn strong { color: #991b1b; }
+table.plan { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 14px; }
+table.plan th, table.plan td { padding: 8px 12px; border: 1px solid #e2e8f0; text-align: left; }
+table.plan th { background: #ecfeff; color: #0e7490; font-weight: 600; }
+</style></head><body>
+
+<span class="cat">PFSENSE &middot; VPN</span>
+<h1>VPN IPsec site-à-site (pfSense ↔ pfSense)</h1>
+
+<table class="plan">
+<tr><th>Site</th><th>IP WAN publique</th><th>Réseau LAN</th></tr>
+<tr><td>Site A (siège)</td><td>203.0.113.10</td><td>192.168.1.0/24</td></tr>
+<tr><td>Site B (agence)</td><td>203.0.113.20</td><td>192.168.2.0/24</td></tr>
+</table>
+
+<p>Configuration identique côté A et B, avec les IP inversées. On documente le côté A ; le B se fait en miroir.</p>
+
+<h3>Sur pfSense SITE A</h3>
+
+<h2><span class="n">1</span>Phase 1 (IKE — négociation du tunnel)</h2>
+<pre>VPN → IPsec → Tunnels → Add P1
+
+Key Exchange version    : IKEv2
+Interface               : WAN
+Remote Gateway          : 203.0.113.20    <span class="c"># IP publique du site B</span>
+Authentication Method   : Mutual PSK
+My identifier           : My IP address
+Peer identifier         : Peer IP address
+Pre-Shared Key          : (générer 32+ caractères aléatoires)
+
+Encryption Algorithm    : AES-256
+Hash                    : SHA256
+DH Group                : 14 (2048 bit)
+Lifetime                : 28800</pre>
+
+<h2><span class="n">2</span>Phase 2 (ESP — trafic chiffré)</h2>
+<pre>Sous la Phase 1 : + Show Phase 2 Entries → Add P2
+
+Mode                   : Tunnel IPv4
+Local Network          : LAN subnet (192.168.1.0/24)
+Remote Network         : Network 192.168.2.0/24
+
+Protocol               : ESP
+Encryption Algorithms  : AES-256-GCM 128 bit
+Hash Algorithms        : SHA256
+PFS key group          : 14 (2048 bit)
+Lifetime               : 3600</pre>
+
+<h2><span class="n">3</span>Règles pare-feu IPsec</h2>
+<pre>Firewall → Rules → IPsec → Add
+
+Action      : Pass
+Protocol    : any
+Source      : Network 192.168.2.0/24
+Destination : Network 192.168.1.0/24
+Description : Autoriser trafic depuis Site B</pre>
+
+<h2><span class="n">4</span>Activer IPsec</h2>
+<pre>VPN → IPsec → cocher "Enable IPsec" → Save</pre>
+
+<h3>Sur pfSense SITE B</h3>
+
+<h2><span class="n">5</span>Répéter en miroir</h2>
+<pre>Remote Gateway            : 203.0.113.10   <span class="c"># site A</span>
+Pre-Shared Key            : (identique à Site A)
+Local Network (P2)        : 192.168.2.0/24
+Remote Network (P2)       : 192.168.1.0/24
+
+Reste identique.</pre>
+
+<h3>Vérifications</h3>
+
+<h2><span class="n">6</span>État du tunnel</h2>
+<pre>Status → IPsec
+  Statut attendu : ESTABLISHED (P1) + INSTALLED (P2)</pre>
+
+<h2><span class="n">7</span>Test de bout en bout</h2>
+<pre><span class="c"># Depuis un poste Site A</span>
+ping 192.168.2.1     <span class="c"># passerelle Site B</span>
+ping 192.168.2.10    <span class="c"># poste Site B</span></pre>
+
+<h2><span class="n">8</span>Troubleshoot</h2>
+<pre>Status → System Logs → IPsec
+  Erreurs courantes :
+   - "NO_PROPOSAL_CHOSEN" → algo P1/P2 différents entre A et B
+   - "AUTHENTICATION_FAILED" → PSK différente
+   - "TS_UNACCEPTABLE" → réseaux locaux/distants mal renseignés</pre>
+
+<div class="warn">
+<strong>PIÈGE FRÉQUENT</strong> — Vérifier que les <strong>MTU/MSS</strong> ne cassent pas le trafic (fragmentation IPsec). En cas de gros paquets qui passent mal : <em>System → Advanced → Firewall &amp; NAT → MSS clamping</em> à 1400.
+</div>
+
+</body></html>

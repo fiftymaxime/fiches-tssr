@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="UTF-8"><title>Fiche - Proxmox VE</title>
+<style>
+* { box-sizing: border-box; }
+body { font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  max-width: 820px; margin: 32px auto; padding: 0 26px;
+  background: #fff; color: #1e293b; line-height: 1.6; }
+.cat { display: inline-block; background: #0891b2; color: #fff; padding: 5px 14px;
+  border-radius: 20px; font-size: 11px; font-weight: 700; letter-spacing: 1.2px; }
+h1 { color: #0e7490; font-size: 26px; font-weight: 700; margin: 12px 0 24px; }
+h2 { color: #0e7490; font-size: 17px; font-weight: 600;
+  margin: 28px 0 8px; padding-bottom: 6px; border-bottom: 1px solid #cffafe; }
+h2 .n { display: inline-block; background: #ecfeff; color: #0e7490;
+  width: 26px; height: 26px; line-height: 26px; text-align: center;
+  border-radius: 50%; font-size: 13px; margin-right: 8px; }
+p { margin: 6px 0; }
+pre { background: #f8fafc; color: #0f172a; border-left: 3px solid #0891b2;
+  padding: 12px 16px; border-radius: 4px; overflow-x: auto; font-size: 13.5px;
+  font-family: "Consolas", "Monaco", monospace; line-height: 1.55; margin: 10px 0; }
+pre .c { color: #64748b; font-style: italic; }
+pre .k { color: #0891b2; font-weight: 600; }
+code.i { background: #ecfeff; color: #0e7490; padding: 2px 6px;
+  border-radius: 3px; font-family: "Consolas", monospace; font-size: 90%; }
+.warn { background: #fef2f2; border-left: 4px solid #dc2626; padding: 10px 14px;
+  border-radius: 4px; color: #7f1d1d; font-size: 14px; margin: 12px 0; }
+.warn strong { color: #991b1b; }
+</style></head><body>
+
+<span class="cat">VIRTUALISATION &middot; PROXMOX</span>
+<h1>Proxmox VE — Install, VM, snapshot, backup</h1>
+
+<h2><span class="n">1</span>Installer Proxmox depuis l'ISO</h2>
+<pre>Télécharger : https://www.proxmox.com/en/downloads
+Créer une clé USB bootable (Rufus / Ventoy)
+Boot → suivre l'assistant :
+  Target disk : SSD dédié système
+  Country/Timezone/Keyboard
+  Root password + email
+  Management : hostname (pve01.monlab.local), IP, gateway, DNS
+Reboot</pre>
+
+<h2><span class="n">2</span>Accès web</h2>
+<pre>https://IP_PROXMOX:8006
+Login : root / (mot de passe défini)
+Realm : PAM (Linux)</pre>
+
+<h2><span class="n">3</span>Désactiver le repo enterprise + activer no-subscription</h2>
+<pre><span class="k">sudo</span> nano /etc/apt/sources.list.d/pve-enterprise.list
+<span class="c"># Commenter la ligne enterprise</span>
+
+<span class="k">sudo</span> nano /etc/apt/sources.list.d/pve-no-subscription.list
+deb http://download.proxmox.com/debian/pve bookworm pve-no-subscription
+
+<span class="k">sudo</span> apt update &amp;&amp; <span class="k">sudo</span> apt dist-upgrade -y</pre>
+
+<h2><span class="n">4</span>Ajouter un pool de stockage</h2>
+<pre>Datacenter → Storage → Add
+  ID     : local-nfs
+  Type   : NFS
+  Server : 192.168.1.50
+  Export : /srv/nfs/proxmox
+  Content: Disk image, ISO image, Backups</pre>
+
+<h2><span class="n">5</span>Uploader une ISO</h2>
+<pre>Datacenter → pve01 → local (storage) → ISO Images → Upload
+  → Sélectionner l'ISO de l'OS invité</pre>
+
+<h2><span class="n">6</span>Créer une VM</h2>
+<pre>Create VM (bouton en haut à droite)
+
+General   : Node = pve01, VM ID = 100, Name = srv-web-01
+OS        : ISO Image = debian-12.iso, Type = Linux
+System    : Machine = q35, BIOS = OVMF (UEFI), Add EFI Disk ✔
+Disks     : Bus = SCSI, Storage = local-nfs, Size = 40 GiB, SSD emulation ✔
+CPU       : Cores = 2, Type = host
+Memory    : 4096 MB
+Network   : Bridge = vmbr0, Model = VirtIO
+Finish    : décocher "Start after created"
+
+Installer l'OS depuis l'ISO → à la fin, retirer l'ISO du lecteur virtuel.</pre>
+
+<h2><span class="n">7</span>Snapshot avant intervention risquée</h2>
+<pre>VM → Snapshots → Take Snapshot
+  Name        : avant-maj-kernel
+  Description : snapshot avant apt dist-upgrade
+  Include RAM : ✔ (si VM allumée)</pre>
+
+<h2><span class="n">8</span>Restauration d'un snapshot</h2>
+<pre>VM → Snapshots → Sélectionner → Rollback</pre>
+
+<h2><span class="n">9</span>Sauvegarde planifiée (Backup Job)</h2>
+<pre>Datacenter → Backup → Add
+
+Node        : pve01
+Storage     : local-nfs
+Selection   : All VMs (ou choix)
+Schedule    : sat 02:00 (samedi 2h)
+Mode        : Snapshot (ne pas éteindre la VM)
+Compression : ZSTD
+Retention   : keep-last=7, keep-weekly=4, keep-monthly=3
+Notification: email</pre>
+
+<h2><span class="n">10</span>Restauration d'une sauvegarde</h2>
+<pre>Storage local-nfs → Backups → sélectionner la sauvegarde → Restore
+  Target VMID : 200 (nouveau, ou écraser 100)</pre>
+
+<h2><span class="n">11</span>CLI utile</h2>
+<pre>qm list                     <span class="c"># liste des VM</span>
+qm start 100
+qm stop 100
+qm snapshot 100 nom-du-snap
+vzdump 100 --storage local-nfs --mode snapshot
+pvesh get /nodes            <span class="c"># API en CLI</span></pre>
+
+<div class="warn">
+<strong>SANS TPM VIRTUEL</strong> — Pour installer une VM Windows 11, il faut ajouter un TPM virtuel (Add TPM State) et une machine <em>q35</em> + BIOS <em>OVMF (UEFI)</em>. Sinon l'installeur bloque au check TPM.
+</div>
+
+</body></html>

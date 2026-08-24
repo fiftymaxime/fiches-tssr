@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Fiche - Installation GLPI sur Debian</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    max-width: 820px; margin: 32px auto; padding: 0 26px;
+    background: #ffffff; color: #1e293b; line-height: 1.6;
+  }
+  .cat {
+    display: inline-block; background: #0891b2; color: #fff;
+    padding: 5px 14px; border-radius: 20px;
+    font-size: 11px; font-weight: 700; letter-spacing: 1.2px;
+  }
+  h1 {
+    color: #0e7490; font-size: 26px; font-weight: 700;
+    margin: 12px 0 24px;
+  }
+  h2 {
+    color: #0e7490; font-size: 17px; font-weight: 600;
+    margin: 28px 0 8px; padding-bottom: 6px;
+    border-bottom: 1px solid #cffafe;
+  }
+  h2 .n {
+    display: inline-block; background: #ecfeff; color: #0e7490;
+    width: 26px; height: 26px; line-height: 26px; text-align: center;
+    border-radius: 50%; font-size: 13px; margin-right: 8px;
+  }
+  h3 {
+    color: #0891b2; font-size: 14px; font-weight: 600;
+    margin: 26px 0 6px; text-transform: uppercase; letter-spacing: 0.8px;
+  }
+  p { margin: 6px 0; }
+  pre {
+    background: #f8fafc; color: #0f172a;
+    border-left: 3px solid #0891b2;
+    padding: 12px 16px; border-radius: 4px;
+    overflow-x: auto; font-size: 13.5px;
+    font-family: "Consolas", "Monaco", "Courier New", monospace;
+    line-height: 1.55; margin: 10px 0;
+  }
+  pre .c { color: #64748b; font-style: italic; }
+  pre .k { color: #0891b2; font-weight: 600; }
+  pre .s { color: #0369a1; font-weight: 600; }
+  code.i {
+    background: #ecfeff; color: #0e7490; padding: 2px 6px;
+    border-radius: 3px; font-family: "Consolas", monospace; font-size: 90%;
+  }
+  .warn {
+    background: #fef2f2; border-left: 4px solid #dc2626;
+    padding: 10px 14px; border-radius: 4px;
+    color: #7f1d1d; font-size: 14px; margin: 12px 0;
+  }
+  .warn strong { color: #991b1b; }
+</style>
+</head>
+<body>
+
+<span class="cat">DEBIAN &middot; APPLICATION WEB</span>
+<h1>Installation de GLPI sur Debian</h1>
+
+<h3>Phase 1 — Serveur LAMP</h3>
+
+<h2><span class="n">1</span>Mettre à jour le système</h2>
+<pre><span class="k">sudo</span> apt update &amp;&amp; <span class="k">sudo</span> apt upgrade -y</pre>
+
+<h2><span class="n">2</span>Installer Apache, MariaDB, PHP + modules</h2>
+<pre><span class="k">sudo</span> apt install -y apache2 mariadb-server \
+  php php-{mysql,curl,gd,intl,mbstring,xml,zip,bz2,ldap,apcu,xmlrpc,cas}</pre>
+
+<h3>Phase 2 — Base de données</h3>
+
+<h2><span class="n">3</span>Sécuriser MariaDB</h2>
+<pre><span class="k">sudo</span> mysql_secure_installation</pre>
+<p>Répondre <strong>Y</strong> à toutes les questions de sécurité et définir un mot de passe root.</p>
+
+<h2><span class="n">4</span>Créer la base et l'utilisateur GLPI</h2>
+<pre><span class="k">sudo</span> mysql -u root -p</pre>
+<p>À l'invite <code class="i">MariaDB [(none)]&gt;</code> :</p>
+<pre><span class="s">CREATE DATABASE</span> glpidb <span class="s">CHARACTER SET</span> utf8mb4 <span class="s">COLLATE</span> utf8mb4_unicode_ci;
+<span class="s">CREATE USER</span> 'glpiuser'@'localhost' <span class="s">IDENTIFIED BY</span> 'MotDePasseFort';
+<span class="s">GRANT ALL PRIVILEGES ON</span> glpidb.* <span class="s">TO</span> 'glpiuser'@'localhost';
+<span class="s">FLUSH PRIVILEGES</span>;
+<span class="s">EXIT</span>;</pre>
+
+<h2><span class="n">5</span>Activer les fuseaux horaires (requis par GLPI 10)</h2>
+<pre><span class="k">sudo</span> mysql_tzinfo_to_sql /usr/share/zoneinfo | <span class="k">sudo</span> mysql -u root -p mysql
+
+<span class="k">sudo</span> mysql -u root -p -e \
+  "GRANT SELECT ON mysql.time_zone_name TO 'glpiuser'@'localhost'; FLUSH PRIVILEGES;"</pre>
+
+<h3>Phase 3 — GLPI</h3>
+
+<h2><span class="n">6</span>Télécharger et extraire GLPI</h2>
+<pre><span class="k">cd</span> /tmp
+wget https://github.com/glpi-project/glpi/releases/download/10.0.15/glpi-10.0.15.tgz
+tar -xvzf glpi-10.0.15.tgz
+<span class="k">sudo</span> mv glpi /var/www/html/</pre>
+<p>Vérifier la dernière version sur <em>github.com/glpi-project/glpi/releases</em>.</p>
+
+<h2><span class="n">7</span>Attribuer les droits à Apache</h2>
+<pre><span class="k">sudo</span> chown -R www-data:www-data /var/www/html/glpi
+<span class="k">sudo</span> chmod -R 755 /var/www/html/glpi</pre>
+
+<h2><span class="n">8</span>Redémarrer Apache + activer au démarrage</h2>
+<pre><span class="k">sudo</span> systemctl restart apache2
+<span class="k">sudo</span> systemctl enable apache2 mariadb</pre>
+
+<h3>Phase 4 — Assistant Web</h3>
+
+<h2><span class="n">9</span>Lancer l'installation navigateur</h2>
+<p>Ouvrir : <code class="i">http://IP_SERVEUR/glpi</code></p>
+<pre>Serveur SQL    : localhost
+Utilisateur    : glpiuser
+Mot de passe   : MotDePasseFort
+Base de données: glpidb</pre>
+<p>Comptes créés par défaut : <strong>glpi/glpi</strong>, tech/tech, normal/normal, post-only/postonly.</p>
+
+<h3>Phase 5 — Sécurisation obligatoire</h3>
+
+<h2><span class="n">10</span>Supprimer le fichier d'installation</h2>
+<pre><span class="k">sudo</span> rm /var/www/html/glpi/install/install.php</pre>
+
+<div class="warn">
+<strong>CRITIQUE</strong> — Modifier immédiatement le mot de passe des <strong>4 comptes par défaut</strong> depuis <em>Administration → Utilisateurs</em>. Ces identifiants sont publics.
+</div>
+
+</body>
+</html>
