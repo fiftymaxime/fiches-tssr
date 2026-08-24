@@ -340,6 +340,8 @@ footer { margin-top:52px; padding-top:18px; border-top:1px solid var(--line); co
   var q = document.getElementById('q');
   var cards = [].slice.call(document.querySelectorAll('.card'));
   var groups = [].slice.call(document.querySelectorAll('.grp'));
+  var sub = document.querySelector('.sub');
+  var subFull = sub.textContent;
   var norm = function (s) {
     return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   };
@@ -354,11 +356,15 @@ footer { margin-top:52px; padding-top:18px; border-top:1px solid var(--line); co
       if (ok) hits++;
     });
     groups.forEach(function (g) {
-      var vis = [].slice.call(g.querySelectorAll('.card')).some(function (c) {
+      var n = [].slice.call(g.querySelectorAll('.card')).filter(function (c) {
         return c.style.display !== 'none';
-      });
-      g.style.display = vis ? '' : 'none';
+      }).length;
+      g.style.display = n ? '' : 'none';
+      g.querySelector('.cnt').textContent = terms.length ? n : g.dataset.n;
     });
+    sub.textContent = terms.length
+      ? (hits + (hits > 1 ? ' fiches trouvées' : ' fiche trouvée'))
+      : subFull;
     document.body.classList.toggle('no-hit', hits === 0);
   }
 
