@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mémo commandes Cisco IOS — TSSR</title>
+<meta name="description" content="Toutes les commandes Cisco IOS étudiées pendant la formation TSSR, regroupées par mode et par usage.">
+<meta name="color-scheme" content="light dark">
+<style>
+:root {
+  --bg:#f6f8fa; --panel:#fff; --line:#e2e8f0; --tx:#1e293b; --dim:#64748b;
+  --acc:#0e7490; --acc-soft:#ecfeff; --acc-line:#a5f3fc; --code:#0f172a; --codebg:#f1f5f9;
+  --shadow:0 1px 2px rgba(15,23,42,.06);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg:#0b1220; --panel:#111c2e; --line:#1e2f47; --tx:#e2e8f0; --dim:#94a3b8;
+    --acc:#22d3ee; --acc-soft:#0d2b33; --acc-line:#155e6b; --code:#a5f3fc; --codebg:#0d1b2c;
+    --shadow:none;
+  }
+}
+* { box-sizing:border-box; }
+html { scroll-behavior:smooth; }
+body { margin:0; background:var(--bg); color:var(--tx); line-height:1.55;
+  font-family:-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; -webkit-text-size-adjust:100%; }
+.wrap { max-width:1000px; margin:0 auto; padding:0 20px 72px; }
+header { padding:40px 0 16px; }
+.kicker { display:inline-block; background:var(--acc-soft); color:var(--acc); border:1px solid var(--acc-line);
+  padding:4px 12px; border-radius:20px; font-size:11px; font-weight:700; letter-spacing:1.3px; }
+h1 { font-size:clamp(25px,5vw,34px); margin:14px 0 6px; letter-spacing:-.5px; }
+.sub-h { color:var(--dim); font-size:15px; margin:0; }
+.back { display:inline-block; margin-top:14px; font-size:13.5px; color:var(--acc); text-decoration:none; }
+.back:hover { text-decoration:underline; }
+.tools { position:sticky; top:0; z-index:5; background:var(--bg); padding:14px 0 10px; }
+#q { width:100%; padding:13px 16px; font-size:16px; color:var(--tx); background:var(--panel);
+  border:1px solid var(--line); border-radius:10px; outline:none; font-family:inherit; box-shadow:var(--shadow); }
+#q:focus { border-color:var(--acc); box-shadow:0 0 0 3px var(--acc-soft); }
+.chips { display:flex; flex-wrap:wrap; gap:7px; margin-top:10px; }
+.chip { font-size:12.5px; color:var(--dim); text-decoration:none; padding:5px 11px;
+  border:1px solid var(--line); border-radius:20px; background:var(--panel); white-space:nowrap; }
+.chip:hover { color:var(--acc); border-color:var(--acc-line); }
+.grp { margin-top:34px; scroll-margin-top:130px; }
+.grp h2 { font-size:15px; font-weight:700; letter-spacing:.4px; text-transform:uppercase;
+  color:var(--acc); margin:0 0 4px; display:flex; align-items:center; gap:9px; }
+.cnt { font-size:11px; font-weight:700; color:var(--dim); background:var(--panel); border:1px solid var(--line);
+  border-radius:20px; padding:1px 8px; text-transform:none; letter-spacing:0; }
+.lead { margin:0 0 12px; color:var(--dim); font-size:13.5px; }
+.rows { background:var(--panel); border:1px solid var(--line); border-radius:10px;
+  overflow:hidden; box-shadow:var(--shadow); }
+.row { display:grid; grid-template-columns:minmax(0,340px) 1fr; gap:4px 18px;
+  padding:11px 16px; border-top:1px solid var(--line); align-items:baseline; }
+.rows > .row:first-child, .rows > .sub:first-child { border-top:none; }
+.sub { padding:11px 16px 7px; border-top:1px solid var(--line); font-size:11.5px; font-weight:700;
+  letter-spacing:.9px; text-transform:uppercase; color:var(--dim); background:var(--codebg); }
+code { font-family:"Consolas",'SF Mono',Monaco,monospace; font-size:13.3px; color:var(--code);
+  background:var(--codebg); border-radius:5px; padding:3px 7px; cursor:pointer;
+  word-break:break-word; justify-self:start; border:1px solid transparent; }
+code:hover, code:focus { border-color:var(--acc-line); outline:none; }
+code.copied { border-color:var(--acc); color:var(--acc); }
+.d { font-size:14px; }
+.d b { font-weight:600; font-family:"Consolas",monospace; font-size:13px; color:var(--acc); }
+.hint { font-size:12.5px; color:var(--dim); margin:8px 0 0; }
+.empty { display:none; padding:40px 0; text-align:center; color:var(--dim); }
+body.no-hit .empty { display:block; }
+footer { margin-top:52px; padding-top:18px; border-top:1px solid var(--line); color:var(--dim); font-size:13px; }
+@media (max-width:640px) {
+  .row { grid-template-columns:1fr; }
+  code { font-size:12.6px; }
+}
+@media print { .tools, .back, footer { display:none; } .rows { break-inside:avoid; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <span class="kicker">TSSR · CISCO IOS</span>
+    <h1>Mémo commandes Cisco</h1>
+    <p class="sub-h">130 entrées relevées dans les cours, TP Packet Tracer, fiches de révision et ECF.</p>
+    <a class="back" href="./">← Retour aux fiches pratiques</a>
+  </header>
+
+  <div class="tools">
+    <input id="q" type="search" placeholder="Rechercher : vlan, trunk, acl, ospf, port-security…" autocomplete="off" aria-label="Rechercher une commande">
+    <nav class="chips">
+      <a class="chip" href="#modes">Modes et navigation</a>
+      <a class="chip" href="#base">Configuration de base</a>
+      <a class="chip" href="#interfaces">Interfaces</a>
+      <a class="chip" href="#vlan">VLAN et commutation</a>
+      <a class="chip" href="#intervlan">Routage inter-VLAN</a>
+      <a class="chip" href="#routage">Routage IP</a>
+      <a class="chip" href="#dhcp">DHCP sur équipement Cisco</a>
+      <a class="chip" href="#acl">Listes de contrôle d&#x27;accès (ACL)</a>
+      <a class="chip" href="#portsec">Sécurité des ports</a>
+      <a class="chip" href="#sauvegarde">Sauvegarde, vérification et dépannage</a>
+    </nav>
+    <p class="hint">Astuce : cliquer sur une commande la copie dans le presse-papier. Touche <b>/</b> pour aller à la recherche.</p>
+  </div>
+
+    <section class="grp" id="modes" data-n="15">
+      <h2>Modes et navigation <span class="cnt">15</span></h2>
+      <p class="lead">Sur IOS, une commande n&#x27;existe que dans son mode. L&#x27;invite indique toujours où l&#x27;on se trouve.</p>
+      <div class="rows">
+        <div class="row" data-k="router&amp;gt; mode utilisateur : consultation seulement"><code tabindex="0" role="button" title="Cliquer pour copier">Router&gt;</code><span class="d">Mode utilisateur : consultation seulement</span></div>
+        <div class="row" data-k="router# mode privilégié : toutes les commandes show, sauvegarde, redémarrage"><code tabindex="0" role="button" title="Cliquer pour copier">Router#</code><span class="d">Mode privilégié : toutes les commandes <b>show</b>, sauvegarde, redémarrage</span></div>
+        <div class="row" data-k="router(config)# configuration globale : ce qui concerne tout l&#x27;équipement"><code tabindex="0" role="button" title="Cliquer pour copier">Router(config)#</code><span class="d">Configuration globale : ce qui concerne tout l'équipement</span></div>
+        <div class="row" data-k="router(config-if)# configuration d&#x27;une interface"><code tabindex="0" role="button" title="Cliquer pour copier">Router(config-if)#</code><span class="d">Configuration d'une interface</span></div>
+        <div class="row" data-k="router(config-subif)# configuration d&#x27;une sous-interface (routage inter-vlan)"><code tabindex="0" role="button" title="Cliquer pour copier">Router(config-subif)#</code><span class="d">Configuration d'une sous-interface (routage inter-VLAN)</span></div>
+        <div class="row" data-k="switch(config-vlan)# configuration d&#x27;un vlan"><code tabindex="0" role="button" title="Cliquer pour copier">Switch(config-vlan)#</code><span class="d">Configuration d'un VLAN</span></div>
+        <div class="sub">Se déplacer entre les modes</div>
+        <div class="row" data-k="enable passer du mode utilisateur au mode privilégié"><code tabindex="0" role="button" title="Cliquer pour copier">enable</code><span class="d">Passer du mode utilisateur au mode privilégié</span></div>
+        <div class="row" data-k="disable revenir au mode utilisateur"><code tabindex="0" role="button" title="Cliquer pour copier">disable</code><span class="d">Revenir au mode utilisateur</span></div>
+        <div class="row" data-k="configure terminal entrer en configuration globale — abrégé conf t"><code tabindex="0" role="button" title="Cliquer pour copier">configure terminal</code><span class="d">Entrer en configuration globale — abrégé <b>conf t</b></span></div>
+        <div class="row" data-k="interface gigabitethernet0/0 entrer dans le mode de configuration de cette interface"><code tabindex="0" role="button" title="Cliquer pour copier">interface GigabitEthernet0/0</code><span class="d">Entrer dans le mode de configuration de cette interface</span></div>
+        <div class="row" data-k="exit remonter d&#x27;un seul niveau"><code tabindex="0" role="button" title="Cliquer pour copier">exit</code><span class="d">Remonter d'un seul niveau</span></div>
+        <div class="row" data-k="end revenir directement au mode privilégié (raccourci ctrl+z)"><code tabindex="0" role="button" title="Cliquer pour copier">end</code><span class="d">Revenir directement au mode privilégié (raccourci <b>Ctrl+Z</b>)</span></div>
+        <div class="row" data-k="do show ip route lancer une commande show sans quitter le mode configuration"><code tabindex="0" role="button" title="Cliquer pour copier">do show ip route</code><span class="d">Lancer une commande <b>show</b> sans quitter le mode configuration</span></div>
+        <div class="sub">Gagner du temps</div>
+        <div class="row" data-k="conf t les commandes ios s&#x27;abrègent tant que l&#x27;abréviation reste unique"><code tabindex="0" role="button" title="Cliquer pour copier">conf t</code><span class="d">Les commandes IOS s'abrègent tant que l'abréviation reste unique</span></div>
+        <div class="row" data-k="sh ip ro abrégé de show ip route — de même no sh pour no shutdown"><code tabindex="0" role="button" title="Cliquer pour copier">sh ip ro</code><span class="d">Abrégé de <b>show ip route</b> — de même <b>no sh</b> pour <b>no shutdown</b></span></div>
+      </div>
+    </section>
+    <section class="grp" id="base" data-n="13">
+      <h2>Configuration de base <span class="cnt">13</span></h2>
+      <p class="lead">Identité de l&#x27;équipement, mots de passe et accès distant — en configuration globale.</p>
+      <div class="rows">
+        <div class="row" data-k="hostname r1 nommer l&#x27;équipement — le nom apparaît aussitôt dans l&#x27;invite"><code tabindex="0" role="button" title="Cliquer pour copier">hostname R1</code><span class="d">Nommer l'équipement — le nom apparaît aussitôt dans l'invite</span></div>
+        <div class="row" data-k="banner motd #accès réservé aux administrateurs réseau# bannière affichée avant la connexion ; le caractère qui ouvre le message le ferme"><code tabindex="0" role="button" title="Cliquer pour copier">banner motd #Accès réservé aux administrateurs réseau#</code><span class="d">Bannière affichée avant la connexion ; le caractère qui ouvre le message le ferme</span></div>
+        <div class="sub">Mots de passe</div>
+        <div class="row" data-k="enable secret cisco2024 mot de passe du mode privilégié, stocké chiffré — c&#x27;est celui à utiliser"><code tabindex="0" role="button" title="Cliquer pour copier">enable secret Cisco2024</code><span class="d">Mot de passe du mode privilégié, stocké <b>chiffré</b> — c'est celui à utiliser</span></div>
+        <div class="row" data-k="enable password cisco123 même rôle, mais stocké en clair dans la configuration : à éviter"><code tabindex="0" role="button" title="Cliquer pour copier">enable password cisco123</code><span class="d">Même rôle, mais stocké en clair dans la configuration : à éviter</span></div>
+        <div class="row" data-k="line console 0 entrer dans la configuration du port console"><code tabindex="0" role="button" title="Cliquer pour copier">line console 0</code><span class="d">Entrer dans la configuration du port console</span></div>
+        <div class="row" data-k="line vty 0 4 entrer dans la configuration des 5 sessions distantes (telnet/ssh)"><code tabindex="0" role="button" title="Cliquer pour copier">line vty 0 4</code><span class="d">Entrer dans la configuration des 5 sessions distantes (Telnet/SSH)</span></div>
+        <div class="row" data-k="password monmotdepasse définir le mot de passe de la ligne"><code tabindex="0" role="button" title="Cliquer pour copier">password monMotDePasse</code><span class="d">Définir le mot de passe de la ligne</span></div>
+        <div class="row" data-k="login exiger ce mot de passe à la connexion"><code tabindex="0" role="button" title="Cliquer pour copier">login</code><span class="d">Exiger ce mot de passe à la connexion</span></div>
+        <div class="row" data-k="login local exiger plutôt un couple identifiant / mot de passe local"><code tabindex="0" role="button" title="Cliquer pour copier">login local</code><span class="d">Exiger plutôt un couple identifiant / mot de passe local</span></div>
+        <div class="sub">Accès SSH</div>
+        <div class="row" data-k="ip domain-name example.com un nom de domaine est obligatoire avant de générer les clés"><code tabindex="0" role="button" title="Cliquer pour copier">ip domain-name example.com</code><span class="d">Un nom de domaine est obligatoire avant de générer les clés</span></div>
+        <div class="row" data-k="crypto key generate rsa générer la paire de clés rsa — 1024 bits minimum"><code tabindex="0" role="button" title="Cliquer pour copier">crypto key generate rsa</code><span class="d">Générer la paire de clés RSA — 1024 bits minimum</span></div>
+        <div class="row" data-k="transport input ssh sur les lignes vty : n&#x27;accepter que ssh, plus telnet"><code tabindex="0" role="button" title="Cliquer pour copier">transport input ssh</code><span class="d">Sur les lignes vty : n'accepter que SSH, plus Telnet</span></div>
+        <div class="row" data-k="access-class 10 in restreindre l&#x27;accès aux vty aux adresses autorisées par une acl"><code tabindex="0" role="button" title="Cliquer pour copier">access-class 10 in</code><span class="d">Restreindre l'accès aux vty aux adresses autorisées par une ACL</span></div>
+      </div>
+    </section>
+    <section class="grp" id="interfaces" data-n="12">
+      <h2>Interfaces <span class="cnt">12</span></h2>
+      <p class="lead">Adressage et activation — mode configuration d&#x27;interface.</p>
+      <div class="rows">
+        <div class="row" data-k="interface gigabitethernet0/0 sélectionner une interface — abrégé interface gi0/0"><code tabindex="0" role="button" title="Cliquer pour copier">interface GigabitEthernet0/0</code><span class="d">Sélectionner une interface — abrégé <b>interface Gi0/0</b></span></div>
+        <div class="row" data-k="interface fastethernet0/1 sur un commutateur d&#x27;accès — abrégé interface fa0/1"><code tabindex="0" role="button" title="Cliquer pour copier">interface FastEthernet0/1</code><span class="d">Sur un commutateur d'accès — abrégé <b>interface fa0/1</b></span></div>
+        <div class="row" data-k="interface range fa0/1 - 10 configurer une plage de ports en une seule fois"><code tabindex="0" role="button" title="Cliquer pour copier">interface range fa0/1 - 10</code><span class="d">Configurer une plage de ports en une seule fois</span></div>
+        <div class="row" data-k="ip address 192.168.1.1 255.255.255.0 attribuer une adresse ip et son masque"><code tabindex="0" role="button" title="Cliquer pour copier">ip address 192.168.1.1 255.255.255.0</code><span class="d">Attribuer une adresse IP et son masque</span></div>
+        <div class="row" data-k="no ip address retirer l&#x27;adresse ip"><code tabindex="0" role="button" title="Cliquer pour copier">no ip address</code><span class="d">Retirer l'adresse IP</span></div>
+        <div class="row" data-k="no shutdown activer l&#x27;interface — oublié, rien ne fonctionne"><code tabindex="0" role="button" title="Cliquer pour copier">no shutdown</code><span class="d">Activer l'interface — oublié, rien ne fonctionne</span></div>
+        <div class="row" data-k="shutdown désactiver l&#x27;interface : c&#x27;est l&#x27;état par défaut sur un routeur"><code tabindex="0" role="button" title="Cliquer pour copier">shutdown</code><span class="d">Désactiver l'interface : c'est l'état par défaut sur un routeur</span></div>
+        <div class="row" data-k="description lan-pc1 commenter l&#x27;interface : la documentation vit dans la config"><code tabindex="0" role="button" title="Cliquer pour copier">description LAN-PC1</code><span class="d">Commenter l'interface : la documentation vit dans la config</span></div>
+        <div class="row" data-k="no switchport transformer un port de commutateur en port routé (couche 3)"><code tabindex="0" role="button" title="Cliquer pour copier">no switchport</code><span class="d">Transformer un port de commutateur en port routé (couche 3)</span></div>
+        <div class="sub">Vérifier</div>
+        <div class="row" data-k="show ip interface brief le tableau de bord : interface, ip, état physique et protocole"><code tabindex="0" role="button" title="Cliquer pour copier">show ip interface brief</code><span class="d">Le tableau de bord : interface, IP, état physique et protocole</span></div>
+        <div class="row" data-k="show interfaces status état, vlan, duplex et vitesse de chaque port du commutateur"><code tabindex="0" role="button" title="Cliquer pour copier">show interfaces status</code><span class="d">État, VLAN, duplex et vitesse de chaque port du commutateur</span></div>
+        <div class="row" data-k="show interfaces le détail complet, compteurs d&#x27;erreurs compris"><code tabindex="0" role="button" title="Cliquer pour copier">show interfaces</code><span class="d">Le détail complet, compteurs d'erreurs compris</span></div>
+      </div>
+    </section>
+    <section class="grp" id="vlan" data-n="15">
+      <h2>VLAN et commutation <span class="cnt">15</span></h2>
+      <p class="lead">Segmenter le réseau au niveau 2 — sur le commutateur.</p>
+      <div class="rows">
+        <div class="row" data-k="vlan 10 créer le vlan 10 et entrer dans sa configuration"><code tabindex="0" role="button" title="Cliquer pour copier">vlan 10</code><span class="d">Créer le VLAN 10 et entrer dans sa configuration</span></div>
+        <div class="row" data-k="name support nommer le vlan — se fait dans le mode config-vlan"><code tabindex="0" role="button" title="Cliquer pour copier">name Support</code><span class="d">Nommer le VLAN — se fait dans le mode config-vlan</span></div>
+        <div class="sub">Port d'accès — vers un poste</div>
+        <div class="row" data-k="switchport mode access forcer le port en mode accès ; à faire avant d&#x27;assigner le vlan"><code tabindex="0" role="button" title="Cliquer pour copier">switchport mode access</code><span class="d">Forcer le port en mode accès ; à faire avant d'assigner le VLAN</span></div>
+        <div class="row" data-k="switchport access vlan 10 rattacher le port au vlan 10"><code tabindex="0" role="button" title="Cliquer pour copier">switchport access vlan 10</code><span class="d">Rattacher le port au VLAN 10</span></div>
+        <div class="row" data-k="switchport voice vlan 20 vlan voix sur le même port : données non taguées, voix taguée (téléphonie ip)"><code tabindex="0" role="button" title="Cliquer pour copier">switchport voice vlan 20</code><span class="d">VLAN voix sur le même port : données non taguées, voix taguée (téléphonie IP)</span></div>
+        <div class="row" data-k="spanning-tree portfast passer le port en transmission immédiate — uniquement sur un port d&#x27;accès"><code tabindex="0" role="button" title="Cliquer pour copier">spanning-tree portfast</code><span class="d">Passer le port en transmission immédiate — uniquement sur un port d'accès</span></div>
+        <div class="sub">Port trunk — entre équipements</div>
+        <div class="row" data-k="switchport mode trunk faire transiter plusieurs vlan sur le lien"><code tabindex="0" role="button" title="Cliquer pour copier">switchport mode trunk</code><span class="d">Faire transiter plusieurs VLAN sur le lien</span></div>
+        <div class="row" data-k="switchport trunk encapsulation dot1q choisir l&#x27;encapsulation 802.1q — nécessaire sur certains modèles"><code tabindex="0" role="button" title="Cliquer pour copier">switchport trunk encapsulation dot1q</code><span class="d">Choisir l'encapsulation 802.1Q — nécessaire sur certains modèles</span></div>
+        <div class="row" data-k="switchport trunk allowed vlan 10,20,30 n&#x27;autoriser que les vlan utiles : le reste est refusé"><code tabindex="0" role="button" title="Cliquer pour copier">switchport trunk allowed vlan 10,20,30</code><span class="d">N'autoriser que les VLAN utiles : le reste est refusé</span></div>
+        <div class="row" data-k="switchport trunk native vlan 99 déplacer le vlan natif hors du vlan 1, par sécurité"><code tabindex="0" role="button" title="Cliquer pour copier">switchport trunk native vlan 99</code><span class="d">Déplacer le VLAN natif hors du VLAN 1, par sécurité</span></div>
+        <div class="sub">VTP</div>
+        <div class="row" data-k="vtp mode server rôle de l&#x27;équipement dans la propagation des vlan"><code tabindex="0" role="button" title="Cliquer pour copier">vtp mode server</code><span class="d">Rôle de l'équipement dans la propagation des VLAN</span></div>
+        <div class="row" data-k="vtp domain monreseau nom du domaine vtp — identique sur tous les équipements"><code tabindex="0" role="button" title="Cliquer pour copier">vtp domain MonReseau</code><span class="d">Nom du domaine VTP — identique sur tous les équipements</span></div>
+        <div class="sub">Vérifier</div>
+        <div class="row" data-k="show vlan brief liste des vlan et des ports qui leur sont rattachés"><code tabindex="0" role="button" title="Cliquer pour copier">show vlan brief</code><span class="d">Liste des VLAN et des ports qui leur sont rattachés</span></div>
+        <div class="row" data-k="show interfaces trunk vérifier qu&#x27;un trunk est bien monté et quels vlan y passent"><code tabindex="0" role="button" title="Cliquer pour copier">show interfaces trunk</code><span class="d">Vérifier qu'un trunk est bien monté et quels VLAN y passent</span></div>
+        <div class="row" data-k="show mac address-table quelles adresses mac sont apprises, sur quel port, dans quel vlan"><code tabindex="0" role="button" title="Cliquer pour copier">show mac address-table</code><span class="d">Quelles adresses MAC sont apprises, sur quel port, dans quel VLAN</span></div>
+      </div>
+    </section>
+    <section class="grp" id="intervlan" data-n="13">
+      <h2>Routage inter-VLAN <span class="cnt">13</span></h2>
+      <p class="lead">Faire communiquer les VLAN entre eux — deux méthodes.</p>
+      <div class="rows">
+        <div class="sub">Router-on-a-stick — sous-interfaces sur le routeur</div>
+        <div class="row" data-k="interface fa0/24 côté commutateur : le port relié au routeur…"><code tabindex="0" role="button" title="Cliquer pour copier">interface fa0/24</code><span class="d">Côté commutateur : le port relié au routeur…</span></div>
+        <div class="row" data-k="switchport mode trunk …doit être un trunk"><code tabindex="0" role="button" title="Cliquer pour copier">switchport mode trunk</code><span class="d">…doit être un trunk</span></div>
+        <div class="row" data-k="interface gigabitethernet0/0 côté routeur : l&#x27;interface physique…"><code tabindex="0" role="button" title="Cliquer pour copier">interface GigabitEthernet0/0</code><span class="d">Côté routeur : l'interface physique…</span></div>
+        <div class="row" data-k="no shutdown …doit être activée, même sans adresse ip"><code tabindex="0" role="button" title="Cliquer pour copier">no shutdown</code><span class="d">…doit être activée, même sans adresse IP</span></div>
+        <div class="row" data-k="interface gigabitethernet0/0.10 créer une sous-interface par vlan"><code tabindex="0" role="button" title="Cliquer pour copier">interface GigabitEthernet0/0.10</code><span class="d">Créer une sous-interface par VLAN</span></div>
+        <div class="row" data-k="encapsulation dot1q 10 rattacher la sous-interface au vlan 10 — à faire avant l&#x27;adresse ip"><code tabindex="0" role="button" title="Cliquer pour copier">encapsulation dot1Q 10</code><span class="d">Rattacher la sous-interface au VLAN 10 — à faire avant l'adresse IP</span></div>
+        <div class="row" data-k="ip address 192.168.10.254 255.255.255.0 cette adresse devient la passerelle des postes du vlan 10"><code tabindex="0" role="button" title="Cliquer pour copier">ip address 192.168.10.254 255.255.255.0</code><span class="d">Cette adresse devient la passerelle des postes du VLAN 10</span></div>
+        <div class="sub">Commutateur de niveau 3 — interfaces SVI</div>
+        <div class="row" data-k="ip routing activer le routage sur le commutateur — sans ça, rien ne passe"><code tabindex="0" role="button" title="Cliquer pour copier">ip routing</code><span class="d">Activer le routage sur le commutateur — sans ça, rien ne passe</span></div>
+        <div class="row" data-k="interface vlan 10 créer l&#x27;interface virtuelle du vlan 10"><code tabindex="0" role="button" title="Cliquer pour copier">interface vlan 10</code><span class="d">Créer l'interface virtuelle du VLAN 10</span></div>
+        <div class="row" data-k="ip address 192.168.10.254 255.255.255.0 adresse de passerelle du vlan"><code tabindex="0" role="button" title="Cliquer pour copier">ip address 192.168.10.254 255.255.255.0</code><span class="d">Adresse de passerelle du VLAN</span></div>
+        <div class="row" data-k="no shutdown une interface vlan reste inactive tant qu&#x27;elle n&#x27;est pas activée"><code tabindex="0" role="button" title="Cliquer pour copier">no shutdown</code><span class="d">Une interface VLAN reste inactive tant qu'elle n'est pas activée</span></div>
+        <div class="sub">Vérifier</div>
+        <div class="row" data-k="show ip route les réseaux des vlan doivent apparaître en connectés"><code tabindex="0" role="button" title="Cliquer pour copier">show ip route</code><span class="d">Les réseaux des VLAN doivent apparaître en connectés</span></div>
+        <div class="row" data-k="ping 192.168.20.1 tester depuis un poste d&#x27;un vlan vers la passerelle d&#x27;un autre"><code tabindex="0" role="button" title="Cliquer pour copier">ping 192.168.20.1</code><span class="d">Tester depuis un poste d'un VLAN vers la passerelle d'un autre</span></div>
+      </div>
+    </section>
+    <section class="grp" id="routage" data-n="18">
+      <h2>Routage IP <span class="cnt">18</span></h2>
+      <p class="lead">Routes statiques et protocoles dynamiques — en configuration globale.</p>
+      <div class="rows">
+        <div class="sub">Routes statiques</div>
+        <div class="row" data-k="ip route 192.168.2.0 255.255.255.0 10.0.0.2 réseau de destination, masque, puis adresse du prochain saut"><code tabindex="0" role="button" title="Cliquer pour copier">ip route 192.168.2.0 255.255.255.0 10.0.0.2</code><span class="d">Réseau de destination, masque, puis adresse du prochain saut</span></div>
+        <div class="row" data-k="ip route 192.168.2.0 255.255.255.0 gigabitethernet0/1 variante : indiquer l&#x27;interface de sortie au lieu du prochain saut"><code tabindex="0" role="button" title="Cliquer pour copier">ip route 192.168.2.0 255.255.255.0 GigabitEthernet0/1</code><span class="d">Variante : indiquer l'interface de sortie au lieu du prochain saut</span></div>
+        <div class="row" data-k="ip route 0.0.0.0 0.0.0.0 10.0.0.1 route par défaut : tout ce qui n&#x27;est pas connu part par là"><code tabindex="0" role="button" title="Cliquer pour copier">ip route 0.0.0.0 0.0.0.0 10.0.0.1</code><span class="d">Route par défaut : tout ce qui n'est pas connu part par là</span></div>
+        <div class="row" data-k="no ip route 192.168.2.0 255.255.255.0 10.0.0.2 supprimer une route"><code tabindex="0" role="button" title="Cliquer pour copier">no ip route 192.168.2.0 255.255.255.0 10.0.0.2</code><span class="d">Supprimer une route</span></div>
+        <div class="sub">OSPF</div>
+        <div class="row" data-k="router ospf 1 activer ospf — le 1 est un numéro de processus local"><code tabindex="0" role="button" title="Cliquer pour copier">router ospf 1</code><span class="d">Activer OSPF — le 1 est un numéro de processus local</span></div>
+        <div class="row" data-k="network 192.168.10.0 0.0.0.255 area 0 annoncer un réseau ; attention, ici c&#x27;est un masque générique (wildcard)"><code tabindex="0" role="button" title="Cliquer pour copier">network 192.168.10.0 0.0.0.255 area 0</code><span class="d">Annoncer un réseau ; attention, ici c'est un <b>masque générique</b> (wildcard)</span></div>
+        <div class="row" data-k="show ip ospf neighbor les voisins ospf découverts — la base du diagnostic"><code tabindex="0" role="button" title="Cliquer pour copier">show ip ospf neighbor</code><span class="d">Les voisins OSPF découverts — la base du diagnostic</span></div>
+        <div class="row" data-k="show ip route ospf les routes apprises par ospf"><code tabindex="0" role="button" title="Cliquer pour copier">show ip route ospf</code><span class="d">Les routes apprises par OSPF</span></div>
+        <div class="sub">RIP</div>
+        <div class="row" data-k="router rip activer rip"><code tabindex="0" role="button" title="Cliquer pour copier">router rip</code><span class="d">Activer RIP</span></div>
+        <div class="row" data-k="version 2 utiliser ripv2, qui transporte les masques"><code tabindex="0" role="button" title="Cliquer pour copier">version 2</code><span class="d">Utiliser RIPv2, qui transporte les masques</span></div>
+        <div class="row" data-k="network 192.168.10.0 annoncer un réseau — en rip, sans masque"><code tabindex="0" role="button" title="Cliquer pour copier">network 192.168.10.0</code><span class="d">Annoncer un réseau — en RIP, sans masque</span></div>
+        <div class="row" data-k="show ip rip database le contenu de la base rip"><code tabindex="0" role="button" title="Cliquer pour copier">show ip rip database</code><span class="d">Le contenu de la base RIP</span></div>
+        <div class="sub">EIGRP</div>
+        <div class="row" data-k="router eigrp 1 activer eigrp — le 1 est le numéro de système autonome, identique partout"><code tabindex="0" role="button" title="Cliquer pour copier">router eigrp 1</code><span class="d">Activer EIGRP — le 1 est le numéro de système autonome, identique partout</span></div>
+        <div class="row" data-k="network 10.10.10.0 0.0.0.3 annoncer un réseau, en masque générique"><code tabindex="0" role="button" title="Cliquer pour copier">network 10.10.10.0 0.0.0.3</code><span class="d">Annoncer un réseau, en masque générique</span></div>
+        <div class="row" data-k="show ip eigrp topology la table de topologie eigrp"><code tabindex="0" role="button" title="Cliquer pour copier">show ip eigrp topology</code><span class="d">La table de topologie EIGRP</span></div>
+        <div class="sub">Lire la table de routage</div>
+        <div class="row" data-k="show ip route la table complète — c connecté, s statique, o ospf, r rip, d eigrp"><code tabindex="0" role="button" title="Cliquer pour copier">show ip route</code><span class="d">La table complète — <b>C</b> connecté, <b>S</b> statique, <b>O</b> OSPF, <b>R</b> RIP, <b>D</b> EIGRP</span></div>
+        <div class="row" data-k="s* 0.0.0.0/0 l&#x27;étoile marque la route par défaut, celle du dernier recours"><code tabindex="0" role="button" title="Cliquer pour copier">S* 0.0.0.0/0</code><span class="d">L'étoile marque la route par défaut, celle du dernier recours</span></div>
+        <div class="row" data-k="do show ip route static filtrer sur un seul type de route, sans quitter le mode config"><code tabindex="0" role="button" title="Cliquer pour copier">do show ip route static</code><span class="d">Filtrer sur un seul type de route, sans quitter le mode config</span></div>
+      </div>
+    </section>
+    <section class="grp" id="dhcp" data-n="6">
+      <h2>DHCP sur équipement Cisco <span class="cnt">6</span></h2>
+      <p class="lead">Distribuer des adresses depuis le routeur, ou relayer vers un serveur.</p>
+      <div class="rows">
+        <div class="row" data-k="ip dhcp excluded-address 192.168.10.1 192.168.10.10 réserver la plage des équipements fixes avant de créer le pool"><code tabindex="0" role="button" title="Cliquer pour copier">ip dhcp excluded-address 192.168.10.1 192.168.10.10</code><span class="d">Réserver la plage des équipements fixes <b>avant</b> de créer le pool</span></div>
+        <div class="row" data-k="ip dhcp pool vlan10 créer un pool et entrer dans sa configuration"><code tabindex="0" role="button" title="Cliquer pour copier">ip dhcp pool VLAN10</code><span class="d">Créer un pool et entrer dans sa configuration</span></div>
+        <div class="row" data-k="network 192.168.10.0 255.255.255.0 plage distribuée par ce pool"><code tabindex="0" role="button" title="Cliquer pour copier">network 192.168.10.0 255.255.255.0</code><span class="d">Plage distribuée par ce pool</span></div>
+        <div class="row" data-k="default-router 192.168.10.1 passerelle annoncée aux clients"><code tabindex="0" role="button" title="Cliquer pour copier">default-router 192.168.10.1</code><span class="d">Passerelle annoncée aux clients</span></div>
+        <div class="row" data-k="dns-server 8.8.8.8 serveur dns annoncé aux clients"><code tabindex="0" role="button" title="Cliquer pour copier">dns-server 8.8.8.8</code><span class="d">Serveur DNS annoncé aux clients</span></div>
+        <div class="row" data-k="ip helper-address 10.0.60.10 sur l&#x27;interface d&#x27;un vlan : relayer les requêtes dhcp vers un serveur externe"><code tabindex="0" role="button" title="Cliquer pour copier">ip helper-address 10.0.60.10</code><span class="d">Sur l'interface d'un VLAN : relayer les requêtes DHCP vers un serveur externe</span></div>
+      </div>
+    </section>
+    <section class="grp" id="acl" data-n="18">
+      <h2>Listes de contrôle d&#x27;accès (ACL) <span class="cnt">18</span></h2>
+      <p class="lead">Filtrer le trafic. Une ACL se termine toujours par un refus implicite de tout le reste.</p>
+      <div class="rows">
+        <div class="sub">ACL standard — filtre sur la source uniquement (1 à 99)</div>
+        <div class="row" data-k="access-list 10 permit 192.168.1.0 0.0.0.255 autoriser un sous-réseau — masque générique, pas masque de sous-réseau"><code tabindex="0" role="button" title="Cliquer pour copier">access-list 10 permit 192.168.1.0 0.0.0.255</code><span class="d">Autoriser un sous-réseau — masque générique, pas masque de sous-réseau</span></div>
+        <div class="row" data-k="access-list 10 deny host 192.168.1.50 bloquer une machine précise"><code tabindex="0" role="button" title="Cliquer pour copier">access-list 10 deny host 192.168.1.50</code><span class="d">Bloquer une machine précise</span></div>
+        <div class="row" data-k="access-list 10 permit any autoriser tout le reste — sinon le refus implicite bloque tout"><code tabindex="0" role="button" title="Cliquer pour copier">access-list 10 permit any</code><span class="d">Autoriser tout le reste — sinon le refus implicite bloque tout</span></div>
+        <div class="sub">ACL étendue — source, destination, protocole, port (100 à 199)</div>
+        <div class="row" data-k="access-list 100 permit tcp 192.168.1.0 0.0.0.255 any eq 80 autoriser le web sortant depuis le lan"><code tabindex="0" role="button" title="Cliquer pour copier">access-list 100 permit tcp 192.168.1.0 0.0.0.255 any eq 80</code><span class="d">Autoriser le web sortant depuis le LAN</span></div>
+        <div class="row" data-k="access-list 100 permit tcp 192.168.1.0 0.0.0.255 any eq 443 idem en https"><code tabindex="0" role="button" title="Cliquer pour copier">access-list 100 permit tcp 192.168.1.0 0.0.0.255 any eq 443</code><span class="d">Idem en HTTPS</span></div>
+        <div class="row" data-k="access-list 100 permit udp any any eq 53 laisser passer le dns"><code tabindex="0" role="button" title="Cliquer pour copier">access-list 100 permit udp any any eq 53</code><span class="d">Laisser passer le DNS</span></div>
+        <div class="row" data-k="access-list 100 permit icmp 192.168.1.0 0.0.0.255 any autoriser le ping depuis le lan"><code tabindex="0" role="button" title="Cliquer pour copier">access-list 100 permit icmp 192.168.1.0 0.0.0.255 any</code><span class="d">Autoriser le ping depuis le LAN</span></div>
+        <div class="row" data-k="access-list 100 deny tcp any any eq 23 bloquer telnet"><code tabindex="0" role="button" title="Cliquer pour copier">access-list 100 deny tcp any any eq 23</code><span class="d">Bloquer Telnet</span></div>
+        <div class="row" data-k="access-list 100 deny ip any any refus explicite final : le trafic refusé devient visible dans les compteurs"><code tabindex="0" role="button" title="Cliquer pour copier">access-list 100 deny ip any any</code><span class="d">Refus explicite final : le trafic refusé devient visible dans les compteurs</span></div>
+        <div class="sub">ACL nommée — plus lisible, et modifiable ligne par ligne</div>
+        <div class="row" data-k="ip access-list standard mon-acl créer une acl standard nommée"><code tabindex="0" role="button" title="Cliquer pour copier">ip access-list standard MON-ACL</code><span class="d">Créer une ACL standard nommée</span></div>
+        <div class="row" data-k="ip access-list extended filtrage-lan créer une acl étendue nommée"><code tabindex="0" role="button" title="Cliquer pour copier">ip access-list extended FILTRAGE-LAN</code><span class="d">Créer une ACL étendue nommée</span></div>
+        <div class="row" data-k="10 permit tcp 192.168.1.0 0.0.0.255 any eq 443 chaque règle porte un numéro de séquence"><code tabindex="0" role="button" title="Cliquer pour copier">10 permit tcp 192.168.1.0 0.0.0.255 any eq 443</code><span class="d">Chaque règle porte un numéro de séquence</span></div>
+        <div class="row" data-k="no 10 supprimer une règle précise sans refaire toute l&#x27;acl"><code tabindex="0" role="button" title="Cliquer pour copier">no 10</code><span class="d">Supprimer une règle précise sans refaire toute l'ACL</span></div>
+        <div class="sub">Appliquer et vérifier</div>
+        <div class="row" data-k="ip access-group 100 in appliquer sur une interface, en entrée — out pour la sortie"><code tabindex="0" role="button" title="Cliquer pour copier">ip access-group 100 in</code><span class="d">Appliquer sur une interface, en entrée — <b>out</b> pour la sortie</span></div>
+        <div class="row" data-k="no ip access-group 100 in retirer l&#x27;acl de l&#x27;interface"><code tabindex="0" role="button" title="Cliquer pour copier">no ip access-group 100 in</code><span class="d">Retirer l'ACL de l'interface</span></div>
+        <div class="row" data-k="show access-lists toutes les acl et leurs compteurs de correspondances"><code tabindex="0" role="button" title="Cliquer pour copier">show access-lists</code><span class="d">Toutes les ACL et leurs compteurs de correspondances</span></div>
+        <div class="row" data-k="show ip interface gigabitethernet0/0 voir quelle acl est appliquée sur l&#x27;interface, et dans quel sens"><code tabindex="0" role="button" title="Cliquer pour copier">show ip interface GigabitEthernet0/0</code><span class="d">Voir quelle ACL est appliquée sur l'interface, et dans quel sens</span></div>
+        <div class="row" data-k="clear access-list counters 100 remettre les compteurs à zéro avant un test"><code tabindex="0" role="button" title="Cliquer pour copier">clear access-list counters 100</code><span class="d">Remettre les compteurs à zéro avant un test</span></div>
+      </div>
+    </section>
+    <section class="grp" id="portsec" data-n="9">
+      <h2>Sécurité des ports <span class="cnt">9</span></h2>
+      <p class="lead">Limiter les machines autorisées sur un port d&#x27;accès du commutateur.</p>
+      <div class="rows">
+        <div class="row" data-k="switchport mode access la sécurité de port ne s&#x27;applique qu&#x27;à un port d&#x27;accès"><code tabindex="0" role="button" title="Cliquer pour copier">switchport mode access</code><span class="d">La sécurité de port ne s'applique qu'à un port d'accès</span></div>
+        <div class="row" data-k="switchport port-security activer la fonction sur le port"><code tabindex="0" role="button" title="Cliquer pour copier">switchport port-security</code><span class="d">Activer la fonction sur le port</span></div>
+        <div class="row" data-k="switchport port-security maximum 2 nombre d&#x27;adresses mac autorisées simultanément"><code tabindex="0" role="button" title="Cliquer pour copier">switchport port-security maximum 2</code><span class="d">Nombre d'adresses MAC autorisées simultanément</span></div>
+        <div class="row" data-k="switchport port-security mac-address sticky apprendre l&#x27;adresse mac connectée et la retenir dans la configuration"><code tabindex="0" role="button" title="Cliquer pour copier">switchport port-security mac-address sticky</code><span class="d">Apprendre l'adresse MAC connectée et la retenir dans la configuration</span></div>
+        <div class="row" data-k="switchport port-security mac-address 00a1.b2c3.d4e5 déclarer une adresse mac en dur"><code tabindex="0" role="button" title="Cliquer pour copier">switchport port-security mac-address 00A1.B2C3.D4E5</code><span class="d">Déclarer une adresse MAC en dur</span></div>
+        <div class="row" data-k="switchport port-security violation shutdown comportement en cas de violation — c&#x27;est le mode par défaut : le port est désactivé"><code tabindex="0" role="button" title="Cliquer pour copier">switchport port-security violation shutdown</code><span class="d">Comportement en cas de violation — c'est le mode par défaut : le port est désactivé</span></div>
+        <div class="row" data-k="switchport port-security violation restrict le trafic fautif est bloqué et journalisé, le port reste actif"><code tabindex="0" role="button" title="Cliquer pour copier">switchport port-security violation restrict</code><span class="d">Le trafic fautif est bloqué et journalisé, le port reste actif</span></div>
+        <div class="row" data-k="switchport port-security violation protect le trafic fautif est bloqué en silence, sans alerte"><code tabindex="0" role="button" title="Cliquer pour copier">switchport port-security violation protect</code><span class="d">Le trafic fautif est bloqué en silence, sans alerte</span></div>
+        <div class="row" data-k="show port-security interface fa0/1 état, compteur de violations et adresses retenues"><code tabindex="0" role="button" title="Cliquer pour copier">show port-security interface fa0/1</code><span class="d">État, compteur de violations et adresses retenues</span></div>
+      </div>
+    </section>
+    <section class="grp" id="sauvegarde" data-n="11">
+      <h2>Sauvegarde, vérification et dépannage <span class="cnt">11</span></h2>
+      <p class="lead">Ce qui n&#x27;est pas enregistré disparaît au redémarrage.</p>
+      <div class="rows">
+        <div class="row" data-k="copy running-config startup-config enregistrer la configuration active en mémoire permanente"><code tabindex="0" role="button" title="Cliquer pour copier">copy running-config startup-config</code><span class="d">Enregistrer la configuration active en mémoire permanente</span></div>
+        <div class="row" data-k="write memory même effet, syntaxe plus ancienne — abrégé write"><code tabindex="0" role="button" title="Cliquer pour copier">write memory</code><span class="d">Même effet, syntaxe plus ancienne — abrégé <b>write</b></span></div>
+        <div class="row" data-k="copy running-config ftp: exporter la configuration vers un serveur, pour archivage"><code tabindex="0" role="button" title="Cliquer pour copier">copy running-config ftp:</code><span class="d">Exporter la configuration vers un serveur, pour archivage</span></div>
+        <div class="row" data-k="show running-config la configuration active, celle qui tourne en ce moment"><code tabindex="0" role="button" title="Cliquer pour copier">show running-config</code><span class="d">La configuration active, celle qui tourne en ce moment</span></div>
+        <div class="row" data-k="show startup-config la configuration enregistrée, celle qui sera rechargée au démarrage"><code tabindex="0" role="button" title="Cliquer pour copier">show startup-config</code><span class="d">La configuration enregistrée, celle qui sera rechargée au démarrage</span></div>
+        <div class="row" data-k="show version modèle, version d&#x27;ios, mémoire, durée de fonctionnement"><code tabindex="0" role="button" title="Cliquer pour copier">show version</code><span class="d">Modèle, version d'IOS, mémoire, durée de fonctionnement</span></div>
+        <div class="sub">Tester</div>
+        <div class="row" data-k="ping 192.168.1.10 test de connectivité de base"><code tabindex="0" role="button" title="Cliquer pour copier">ping 192.168.1.10</code><span class="d">Test de connectivité de base</span></div>
+        <div class="row" data-k="traceroute 192.168.2.1 suivre le chemin et repérer où ça bloque"><code tabindex="0" role="button" title="Cliquer pour copier">traceroute 192.168.2.1</code><span class="d">Suivre le chemin et repérer où ça bloque</span></div>
+        <div class="row" data-k="show ip interface brief le premier réflexe : une interface down/down est un problème physique ou un no shutdown oublié"><code tabindex="0" role="button" title="Cliquer pour copier">show ip interface brief</code><span class="d">Le premier réflexe : une interface <b>down/down</b> est un problème physique ou un <b>no shutdown</b> oublié</span></div>
+        <div class="row" data-k="show mac address-table interface fastethernet0/1 quelle machine est vue derrière ce port"><code tabindex="0" role="button" title="Cliquer pour copier">show mac address-table interface FastEthernet0/1</code><span class="d">Quelle machine est vue derrière ce port</span></div>
+        <div class="row" data-k="show interfaces fastethernet0/1 status état, vlan et négociation d&#x27;un port précis"><code tabindex="0" role="button" title="Cliquer pour copier">show interfaces FastEthernet0/1 status</code><span class="d">État, VLAN et négociation d'un port précis</span></div>
+      </div>
+    </section>
+
+  <p class="empty">Aucune commande ne correspond à cette recherche.</p>
+
+  <footer>Relevé à partir des documents de formation — les noms d'interfaces et les adresses sont des exemples, à adapter à la maquette.</footer>
+</div>
+
+<script>
+(function () {
+  var q = document.getElementById('q');
+  var rows = [].slice.call(document.querySelectorAll('.row'));
+  var groups = [].slice.call(document.querySelectorAll('.grp'));
+  var sub = document.querySelector('.sub-h');
+  var subFull = sub.textContent;
+  var norm = function (s) { return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''); };
+  rows.forEach(function (r) { r.dataset.n = norm(r.dataset.k); });
+
+  function run() {
+    var terms = norm(q.value).split(/\s+/).filter(Boolean);
+    var hits = 0;
+    rows.forEach(function (r) {
+      var ok = terms.every(function (t) { return r.dataset.n.indexOf(t) > -1; });
+      r.style.display = ok ? '' : 'none';
+      if (ok) hits++;
+    });
+    groups.forEach(function (g) {
+      var n = 0;
+      [].slice.call(g.querySelectorAll('.row')).forEach(function (r) { if (r.style.display !== 'none') n++; });
+      g.style.display = n ? '' : 'none';
+      g.querySelector('.cnt').textContent = terms.length ? n : g.dataset.n;
+      var node = g.querySelector('.rows').firstElementChild, seen = null;
+      var subs = [];
+      while (node) {
+        if (node.classList.contains('sub')) { seen = node; seen.dataset.v = '0'; subs.push(seen); }
+        else if (seen && node.style.display !== 'none') { seen.dataset.v = '1'; }
+        node = node.nextElementSibling;
+      }
+      subs.forEach(function (s) { s.style.display = s.dataset.v === '1' ? '' : 'none'; });
+    });
+    sub.textContent = terms.length
+      ? (hits + (hits > 1 ? ' commandes trouvées' : ' commande trouvée'))
+      : subFull;
+    document.body.classList.toggle('no-hit', hits === 0);
+  }
+
+  q.addEventListener('input', run);
+  q.addEventListener('keydown', function (e) { if (e.key === 'Escape') { q.value = ''; run(); } });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === '/' && document.activeElement !== q) { e.preventDefault(); q.focus(); }
+  });
+
+  function copy(el) {
+    var txt = el.textContent;
+    var done = function () {
+      el.classList.add('copied');
+      setTimeout(function () { el.classList.remove('copied'); }, 900);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(txt).then(done, function () { fallback(txt, done); });
+    } else { fallback(txt, done); }
+  }
+  function fallback(txt, done) {
+    try {
+      var ta = document.createElement('textarea');
+      ta.value = txt; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select(); document.execCommand('copy');
+      document.body.removeChild(ta); done();
+    } catch (e) { /* rien à faire */ }
+  }
+  document.addEventListener('click', function (e) {
+    if (e.target.tagName === 'CODE' && e.target.closest('.row')) copy(e.target);
+  });
+  document.addEventListener('keydown', function (e) {
+    if ((e.key === 'Enter' || e.key === ' ') && e.target.tagName === 'CODE' && e.target.closest('.row')) {
+      e.preventDefault(); copy(e.target);
+    }
+  });
+
+  run();
+})();
+</script>
+</body>
+</html>
