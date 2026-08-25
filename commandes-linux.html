@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mémo commandes Linux — TSSR</title>
+<meta name="description" content="Toutes les commandes Linux étudiées pendant la formation TSSR, regroupées par usage.">
+<meta name="color-scheme" content="light dark">
+<style>
+:root {
+  --bg:#f6f8fa; --panel:#fff; --line:#e2e8f0; --tx:#1e293b; --dim:#64748b;
+  --acc:#0e7490; --acc-soft:#ecfeff; --acc-line:#a5f3fc; --code:#0f172a; --codebg:#f1f5f9;
+  --shadow:0 1px 2px rgba(15,23,42,.06);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg:#0b1220; --panel:#111c2e; --line:#1e2f47; --tx:#e2e8f0; --dim:#94a3b8;
+    --acc:#22d3ee; --acc-soft:#0d2b33; --acc-line:#155e6b; --code:#a5f3fc; --codebg:#0d1b2c;
+    --shadow:none;
+  }
+}
+* { box-sizing:border-box; }
+html { scroll-behavior:smooth; }
+body { margin:0; background:var(--bg); color:var(--tx); line-height:1.55;
+  font-family:-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; -webkit-text-size-adjust:100%; }
+.wrap { max-width:1000px; margin:0 auto; padding:0 20px 72px; }
+header { padding:40px 0 16px; }
+.kicker { display:inline-block; background:var(--acc-soft); color:var(--acc); border:1px solid var(--acc-line);
+  padding:4px 12px; border-radius:20px; font-size:11px; font-weight:700; letter-spacing:1.3px; }
+h1 { font-size:clamp(25px,5vw,34px); margin:14px 0 6px; letter-spacing:-.5px; }
+.sub-h { color:var(--dim); font-size:15px; margin:0; }
+.back { display:inline-block; margin-top:14px; font-size:13.5px; color:var(--acc); text-decoration:none; }
+.back:hover { text-decoration:underline; }
+.tools { position:sticky; top:0; z-index:5; background:var(--bg); padding:14px 0 10px; }
+#q { width:100%; padding:13px 16px; font-size:16px; color:var(--tx); background:var(--panel);
+  border:1px solid var(--line); border-radius:10px; outline:none; font-family:inherit; box-shadow:var(--shadow); }
+#q:focus { border-color:var(--acc); box-shadow:0 0 0 3px var(--acc-soft); }
+.chips { display:flex; flex-wrap:wrap; gap:7px; margin-top:10px; }
+.chip { font-size:12.5px; color:var(--dim); text-decoration:none; padding:5px 11px;
+  border:1px solid var(--line); border-radius:20px; background:var(--panel); white-space:nowrap; }
+.chip:hover { color:var(--acc); border-color:var(--acc-line); }
+.grp { margin-top:34px; scroll-margin-top:130px; }
+.grp h2 { font-size:15px; font-weight:700; letter-spacing:.4px; text-transform:uppercase;
+  color:var(--acc); margin:0 0 4px; display:flex; align-items:center; gap:9px; }
+.cnt { font-size:11px; font-weight:700; color:var(--dim); background:var(--panel); border:1px solid var(--line);
+  border-radius:20px; padding:1px 8px; text-transform:none; letter-spacing:0; }
+.lead { margin:0 0 12px; color:var(--dim); font-size:13.5px; }
+.rows { background:var(--panel); border:1px solid var(--line); border-radius:10px;
+  overflow:hidden; box-shadow:var(--shadow); }
+.row { display:grid; grid-template-columns:minmax(0,340px) 1fr; gap:4px 18px;
+  padding:11px 16px; border-top:1px solid var(--line); align-items:baseline; }
+.rows > .row:first-child, .rows > .sub:first-child { border-top:none; }
+.sub { padding:11px 16px 7px; border-top:1px solid var(--line); font-size:11.5px; font-weight:700;
+  letter-spacing:.9px; text-transform:uppercase; color:var(--dim); background:var(--codebg); }
+code { font-family:"Consolas",'SF Mono',Monaco,monospace; font-size:13.3px; color:var(--code);
+  background:var(--codebg); border-radius:5px; padding:3px 7px; cursor:pointer;
+  word-break:break-word; justify-self:start; border:1px solid transparent; }
+code:hover, code:focus { border-color:var(--acc-line); outline:none; }
+code.copied { border-color:var(--acc); color:var(--acc); }
+.d { font-size:14px; }
+.d b { font-weight:600; font-family:"Consolas",monospace; font-size:13px; color:var(--acc); }
+.hint { font-size:12.5px; color:var(--dim); margin:8px 0 0; }
+.empty { display:none; padding:40px 0; text-align:center; color:var(--dim); }
+body.no-hit .empty { display:block; }
+footer { margin-top:52px; padding-top:18px; border-top:1px solid var(--line); color:var(--dim); font-size:13px; }
+@media (max-width:640px) {
+  .row { grid-template-columns:1fr; }
+  code { font-size:12.6px; }
+}
+@media print { .tools, .back, footer { display:none; } .rows { break-inside:avoid; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <span class="kicker">TSSR · LINUX</span>
+    <h1>Mémo commandes Linux</h1>
+    <p class="sub-h">312 entrées relevées dans les cours, fiches de révision, TP et scripts de la formation.</p>
+    <a class="back" href="./">← Retour aux fiches pratiques</a>
+  </header>
+
+  <div class="tools">
+    <input id="q" type="search" placeholder="Rechercher : droits, ssh, cron, pare-feu, sauvegarde…" autocomplete="off" aria-label="Rechercher une commande">
+    <nav class="chips">
+      <a class="chip" href="#reperes">Se repérer, s&#x27;informer</a>
+      <a class="chip" href="#fichiers">Fichiers et répertoires</a>
+      <a class="chip" href="#texte">Lire et transformer du texte</a>
+      <a class="chip" href="#users">Utilisateurs, groupes et sudo</a>
+      <a class="chip" href="#droits">Droits et permissions</a>
+      <a class="chip" href="#paquets">Gestion des paquets</a>
+      <a class="chip" href="#services">Services systemd et journaux</a>
+      <a class="chip" href="#process">Processus et ressources</a>
+      <a class="chip" href="#reseau">Réseau — diagnostic</a>
+      <a class="chip" href="#ssh">SSH et transferts</a>
+      <a class="chip" href="#disques">Disques, partitions et montage</a>
+      <a class="chip" href="#archives">Archives et compression</a>
+      <a class="chip" href="#sauvegarde">Sauvegarde et planification</a>
+      <a class="chip" href="#bash">Scripts Bash</a>
+      <a class="chip" href="#durcissement">Sécurité et durcissement</a>
+      <a class="chip" href="#serveurs">Serveurs web, bases et partages</a>
+      <a class="chip" href="#audit">Audit réseau et supervision</a>
+      <a class="chip" href="#virtu">Conteneurs, VM et VPN</a>
+    </nav>
+    <p class="hint">Astuce : cliquer sur une commande la copie dans le presse-papier. Touche <b>/</b> pour aller à la recherche.</p>
+  </div>
+
+    <section class="grp" id="reperes" data-n="13">
+      <h2>Se repérer, s&#x27;informer <span class="cnt">13</span></h2>
+      <p class="lead">Les premières commandes tapées dans un shell inconnu.</p>
+      <div class="rows">
+        <div class="row" data-k="pwd afficher le chemin complet du répertoire courant"><code tabindex="0" role="button" title="Cliquer pour copier">pwd</code><span class="d">Afficher le chemin complet du répertoire courant</span></div>
+        <div class="row" data-k="ls -la lister avec détails et fichiers cachés — -h tailles lisibles, -t tri par date, -ld le dossier lui-même"><code tabindex="0" role="button" title="Cliquer pour copier">ls -la</code><span class="d">Lister avec détails et fichiers cachés — <b>-h</b> tailles lisibles, <b>-t</b> tri par date, <b>-ld</b> le dossier lui-même</span></div>
+        <div class="row" data-k="cd /chemin changer de répertoire — cd ~ home, cd .. parent, cd - précédent"><code tabindex="0" role="button" title="Cliquer pour copier">cd /chemin</code><span class="d">Changer de répertoire — <b>cd ~</b> home, <b>cd ..</b> parent, <b>cd -</b> précédent</span></div>
+        <div class="row" data-k="man commande ouvrir le manuel d&#x27;une commande"><code tabindex="0" role="button" title="Cliquer pour copier">man commande</code><span class="d">Ouvrir le manuel d'une commande</span></div>
+        <div class="row" data-k="history historique des commandes — ctrl+r pour y chercher, !! rejoue la dernière"><code tabindex="0" role="button" title="Cliquer pour copier">history</code><span class="d">Historique des commandes — <b>Ctrl+R</b> pour y chercher, <b>!!</b> rejoue la dernière</span></div>
+        <div class="row" data-k="clear effacer l&#x27;écran (raccourci ctrl+l)"><code tabindex="0" role="button" title="Cliquer pour copier">clear</code><span class="d">Effacer l'écran (raccourci <b>Ctrl+L</b>)</span></div>
+        <div class="row" data-k="uname -a version et architecture du noyau — uname -r pour la version seule"><code tabindex="0" role="button" title="Cliquer pour copier">uname -a</code><span class="d">Version et architecture du noyau — <b>uname -r</b> pour la version seule</span></div>
+        <div class="row" data-k="cat /etc/os-release version exacte de la distribution"><code tabindex="0" role="button" title="Cliquer pour copier">cat /etc/os-release</code><span class="d">Version exacte de la distribution</span></div>
+        <div class="row" data-k="hostname nom de la machine — hostname -i affiche son ip"><code tabindex="0" role="button" title="Cliquer pour copier">hostname</code><span class="d">Nom de la machine — <b>hostname -i</b> affiche son IP</span></div>
+        <div class="row" data-k="whoami sous quel compte je suis connecté"><code tabindex="0" role="button" title="Cliquer pour copier">whoami</code><span class="d">Sous quel compte je suis connecté</span></div>
+        <div class="row" data-k="who qui est connecté sur la machine (aussi w)"><code tabindex="0" role="button" title="Cliquer pour copier">who</code><span class="d">Qui est connecté sur la machine (aussi <b>w</b>)</span></div>
+        <div class="row" data-k="uptime depuis combien de temps le système tourne, et sa charge"><code tabindex="0" role="button" title="Cliquer pour copier">uptime</code><span class="d">Depuis combien de temps le système tourne, et sa charge</span></div>
+        <div class="row" data-k="exit fermer la session courante"><code tabindex="0" role="button" title="Cliquer pour copier">exit</code><span class="d">Fermer la session courante</span></div>
+      </div>
+    </section>
+    <section class="grp" id="fichiers" data-n="19">
+      <h2>Fichiers et répertoires <span class="cnt">19</span></h2>
+      <p class="lead">Créer, copier, déplacer, supprimer, retrouver.</p>
+      <div class="rows">
+        <div class="row" data-k="mkdir dossier créer un répertoire — mkdir -p a/b/c crée aussi les parents"><code tabindex="0" role="button" title="Cliquer pour copier">mkdir dossier</code><span class="d">Créer un répertoire — <b>mkdir -p a/b/c</b> crée aussi les parents</span></div>
+        <div class="row" data-k="rmdir dossier supprimer un répertoire vide uniquement"><code tabindex="0" role="button" title="Cliquer pour copier">rmdir dossier</code><span class="d">Supprimer un répertoire <b>vide</b> uniquement</span></div>
+        <div class="row" data-k="rm fichier supprimer un fichier — -i demande confirmation, -f force"><code tabindex="0" role="button" title="Cliquer pour copier">rm fichier</code><span class="d">Supprimer un fichier — <b>-i</b> demande confirmation, <b>-f</b> force</span></div>
+        <div class="row" data-k="rm -rf dossier supprimer un dossier et tout son contenu — irréversible, à taper lentement"><code tabindex="0" role="button" title="Cliquer pour copier">rm -rf dossier</code><span class="d">Supprimer un dossier et tout son contenu — irréversible, à taper lentement</span></div>
+        <div class="row" data-k="cp source destination copier — -r récursif, -p préserve les attributs, -a archive"><code tabindex="0" role="button" title="Cliquer pour copier">cp source destination</code><span class="d">Copier — <b>-r</b> récursif, <b>-p</b> préserve les attributs, <b>-a</b> archive</span></div>
+        <div class="row" data-k="cp /etc/samba/smb.conf /etc/samba/smb.conf.bak le réflexe : sauvegarder un fichier de conf avant de le modifier"><code tabindex="0" role="button" title="Cliquer pour copier">cp /etc/samba/smb.conf /etc/samba/smb.conf.bak</code><span class="d">Le réflexe : sauvegarder un fichier de conf avant de le modifier</span></div>
+        <div class="row" data-k="mv source destination déplacer ou renommer, c&#x27;est la même commande"><code tabindex="0" role="button" title="Cliquer pour copier">mv source destination</code><span class="d">Déplacer <b>ou</b> renommer, c'est la même commande</span></div>
+        <div class="row" data-k="touch fichier créer un fichier vide (ou mettre à jour sa date)"><code tabindex="0" role="button" title="Cliquer pour copier">touch fichier</code><span class="d">Créer un fichier vide (ou mettre à jour sa date)</span></div>
+        <div class="row" data-k="ln -s cible lien créer un lien symbolique"><code tabindex="0" role="button" title="Cliquer pour copier">ln -s cible lien</code><span class="d">Créer un lien symbolique</span></div>
+        <div class="row" data-k="du -sh /chemin taille d&#x27;un dossier — -s résumé, -h lisible"><code tabindex="0" role="button" title="Cliquer pour copier">du -sh /chemin</code><span class="d">Taille d'un dossier — <b>-s</b> résumé, <b>-h</b> lisible</span></div>
+        <div class="row" data-k="df -h espace libre par système de fichiers"><code tabindex="0" role="button" title="Cliquer pour copier">df -h</code><span class="d">Espace libre par système de fichiers</span></div>
+        <div class="sub">Rechercher avec find</div>
+        <div class="row" data-k="find / -name &quot;sshd_config&quot; chercher par nom — -iname ignore la casse"><code tabindex="0" role="button" title="Cliquer pour copier">find / -name "sshd_config"</code><span class="d">Chercher par nom — <b>-iname</b> ignore la casse</span></div>
+        <div class="row" data-k="find /etc -type f filtrer sur le type — -type d pour les répertoires"><code tabindex="0" role="button" title="Cliquer pour copier">find /etc -type f</code><span class="d">Filtrer sur le type — <b>-type d</b> pour les répertoires</span></div>
+        <div class="row" data-k="find / -size +100m trouver les gros fichiers"><code tabindex="0" role="button" title="Cliquer pour copier">find / -size +100M</code><span class="d">Trouver les gros fichiers</span></div>
+        <div class="row" data-k="find /home -mtime -7 modifiés il y a moins de 7 jours — +7 pour « plus de »"><code tabindex="0" role="button" title="Cliquer pour copier">find /home -mtime -7</code><span class="d">Modifiés il y a moins de 7 jours — <b>+7</b> pour « plus de »</span></div>
+        <div class="row" data-k="find / -user jean appartenant à un utilisateur — -perm 777 pour les droits laxistes"><code tabindex="0" role="button" title="Cliquer pour copier">find / -user jean</code><span class="d">Appartenant à un utilisateur — <b>-perm 777</b> pour les droits laxistes</span></div>
+        <div class="row" data-k="find /tmp -mtime +7 -exec rm {} \; exécuter une commande sur chaque résultat"><code tabindex="0" role="button" title="Cliquer pour copier">find /tmp -mtime +7 -exec rm {} \;</code><span class="d">Exécuter une commande sur chaque résultat</span></div>
+        <div class="row" data-k="find /var/www -type d -exec chmod 755 {} \; le duo classique : 755 sur les dossiers, 644 sur les fichiers"><code tabindex="0" role="button" title="Cliquer pour copier">find /var/www -type d -exec chmod 755 {} \;</code><span class="d">Le duo classique : 755 sur les dossiers, 644 sur les fichiers</span></div>
+        <div class="row" data-k="find $dest -name &quot;backup_*.tar.gz&quot; -mtime +30 -delete purger les vieilles sauvegardes (-delete évite -exec rm)"><code tabindex="0" role="button" title="Cliquer pour copier">find $DEST -name "backup_*.tar.gz" -mtime +30 -delete</code><span class="d">Purger les vieilles sauvegardes (<b>-delete</b> évite -exec rm)</span></div>
+      </div>
+    </section>
+    <section class="grp" id="texte" data-n="23">
+      <h2>Lire et transformer du texte <span class="cnt">23</span></h2>
+      <p class="lead">Consulter un fichier, filtrer, extraire, remplacer.</p>
+      <div class="rows">
+        <div class="row" data-k="cat fichier afficher tout le contenu — -n numérote les lignes"><code tabindex="0" role="button" title="Cliquer pour copier">cat fichier</code><span class="d">Afficher tout le contenu — <b>-n</b> numérote les lignes</span></div>
+        <div class="row" data-k="less fichier afficher page par page — q quitte, / recherche"><code tabindex="0" role="button" title="Cliquer pour copier">less fichier</code><span class="d">Afficher page par page — <b>q</b> quitte, <b>/</b> recherche</span></div>
+        <div class="row" data-k="head -n 20 fichier les 20 premières lignes"><code tabindex="0" role="button" title="Cliquer pour copier">head -n 20 fichier</code><span class="d">Les 20 premières lignes</span></div>
+        <div class="row" data-k="tail -n 50 fichier les 50 dernières lignes"><code tabindex="0" role="button" title="Cliquer pour copier">tail -n 50 fichier</code><span class="d">Les 50 dernières lignes</span></div>
+        <div class="row" data-k="tail -f /var/log/syslog suivre un fichier en direct — indispensable pour déboguer un service"><code tabindex="0" role="button" title="Cliquer pour copier">tail -f /var/log/syslog</code><span class="d">Suivre un fichier en direct — indispensable pour déboguer un service</span></div>
+        <div class="row" data-k="nano fichier éditer — ctrl+o enregistre, ctrl+x quitte"><code tabindex="0" role="button" title="Cliquer pour copier">nano fichier</code><span class="d">Éditer — <b>Ctrl+O</b> enregistre, <b>Ctrl+X</b> quitte</span></div>
+        <div class="row" data-k="vim fichier éditer — i insertion, échap puis :wq pour enregistrer et quitter"><code tabindex="0" role="button" title="Cliquer pour copier">vim fichier</code><span class="d">Éditer — <b>i</b> insertion, <b>Échap</b> puis <b>:wq</b> pour enregistrer et quitter</span></div>
+        <div class="row" data-k="grep &quot;texte&quot; fichier chercher — -i ignore la casse, -r récursif, -n numéro de ligne, -c compte"><code tabindex="0" role="button" title="Cliquer pour copier">grep "texte" fichier</code><span class="d">Chercher — <b>-i</b> ignore la casse, <b>-r</b> récursif, <b>-n</b> numéro de ligne, <b>-c</b> compte</span></div>
+        <div class="row" data-k="grep &quot;failed password&quot; /var/log/auth.log repérer les échecs d&#x27;authentification ssh"><code tabindex="0" role="button" title="Cliquer pour copier">grep "Failed password" /var/log/auth.log</code><span class="d">Repérer les échecs d'authentification SSH</span></div>
+        <div class="row" data-k="wc -l fichier compter les lignes — -w mots, -c octets"><code tabindex="0" role="button" title="Cliquer pour copier">wc -l fichier</code><span class="d">Compter les lignes — <b>-w</b> mots, <b>-c</b> octets</span></div>
+        <div class="row" data-k="sed -i &#x27;s/ancien/nouveau/g&#x27; fichier remplacer directement dans le fichier"><code tabindex="0" role="button" title="Cliquer pour copier">sed -i 's/ancien/nouveau/g' fichier</code><span class="d">Remplacer directement dans le fichier</span></div>
+        <div class="row" data-k="awk -f: &#x27;{print $1}&#x27; /etc/passwd extraire une colonne — -f définit le séparateur"><code tabindex="0" role="button" title="Cliquer pour copier">awk -F: '{print $1}' /etc/passwd</code><span class="d">Extraire une colonne — <b>-F</b> définit le séparateur</span></div>
+        <div class="row" data-k="awk -f: &#x27;$3 &lt; 1000 {print $1}&#x27; /etc/passwd filtrer sur une condition : ici les comptes système"><code tabindex="0" role="button" title="Cliquer pour copier">awk -F: '$3 < 1000 {print $1}' /etc/passwd</code><span class="d">Filtrer sur une condition : ici les comptes système</span></div>
+        <div class="row" data-k="cut -d: -f1 /etc/passwd découper sur un délimiteur, plus simple qu&#x27;awk pour un cas basique"><code tabindex="0" role="button" title="Cliquer pour copier">cut -d: -f1 /etc/passwd</code><span class="d">Découper sur un délimiteur, plus simple qu'awk pour un cas basique</span></div>
+        <div class="row" data-k="sort -u trier en supprimant les doublons — sort -rn tri numérique décroissant"><code tabindex="0" role="button" title="Cliquer pour copier">sort -u</code><span class="d">Trier en supprimant les doublons — <b>sort -rn</b> tri numérique décroissant</span></div>
+        <div class="row" data-k="uniq -c compter les occurrences (après un sort)"><code tabindex="0" role="button" title="Cliquer pour copier">uniq -c</code><span class="d">Compter les occurrences (après un <b>sort</b>)</span></div>
+        <div class="row" data-k="tee -a fichier.log afficher et écrire dans un fichier en même temps"><code tabindex="0" role="button" title="Cliquer pour copier">tee -a fichier.log</code><span class="d">Afficher <b>et</b> écrire dans un fichier en même temps</span></div>
+        <div class="row" data-k="xargs -i{} rm -rf {} passer chaque ligne reçue en argument — -0 avec find -print0"><code tabindex="0" role="button" title="Cliquer pour copier">xargs -I{} rm -rf {}</code><span class="d">Passer chaque ligne reçue en argument — <b>-0</b> avec <b>find -print0</b></span></div>
+        <div class="sub">Enchaîner et rediriger</div>
+        <div class="row" data-k="commande &amp;gt; fichier rediriger la sortie (écrase) — &amp;gt;&amp;gt; ajoute à la fin"><code tabindex="0" role="button" title="Cliquer pour copier">commande &gt; fichier</code><span class="d">Rediriger la sortie (écrase) — <b>&gt;&gt;</b> ajoute à la fin</span></div>
+        <div class="row" data-k="commande 2&amp;gt;&amp;amp;1 rediriger aussi les erreurs vers la sortie standard"><code tabindex="0" role="button" title="Cliquer pour copier">commande 2&gt;&amp;1</code><span class="d">Rediriger aussi les erreurs vers la sortie standard</span></div>
+        <div class="row" data-k="commande &amp;gt; /dev/null 2&amp;gt;&amp;amp;1 faire taire complètement une commande"><code tabindex="0" role="button" title="Cliquer pour copier">commande &gt; /dev/null 2&gt;&amp;1</code><span class="d">Faire taire complètement une commande</span></div>
+        <div class="row" data-k="cmd1 | cmd2 envoyer la sortie de la première dans l&#x27;entrée de la seconde"><code tabindex="0" role="button" title="Cliquer pour copier">cmd1 | cmd2</code><span class="d">Envoyer la sortie de la première dans l'entrée de la seconde</span></div>
+        <div class="row" data-k="cut -d] -f2 /var/log/snort/alert | sort | uniq -c | sort -rn exemple complet : compter les alertes snort par type"><code tabindex="0" role="button" title="Cliquer pour copier">cut -d] -f2 /var/log/snort/alert | sort | uniq -c | sort -rn</code><span class="d">Exemple complet : compter les alertes Snort par type</span></div>
+      </div>
+    </section>
+    <section class="grp" id="users" data-n="23">
+      <h2>Utilisateurs, groupes et sudo <span class="cnt">23</span></h2>
+      <p class="lead">Comptes, appartenances, élévation de privilèges.</p>
+      <div class="rows">
+        <div class="row" data-k="useradd -m -s /bin/bash jean créer un utilisateur avec home et shell — -g sudo l&#x27;ajoute d&#x27;emblée à un groupe"><code tabindex="0" role="button" title="Cliquer pour copier">useradd -m -s /bin/bash jean</code><span class="d">Créer un utilisateur avec home et shell — <b>-G sudo</b> l'ajoute d'emblée à un groupe</span></div>
+        <div class="row" data-k="useradd -rs /bin/false node_exporter compte de service : système, sans shell de connexion"><code tabindex="0" role="button" title="Cliquer pour copier">useradd -rs /bin/false node_exporter</code><span class="d">Compte de service : système, sans shell de connexion</span></div>
+        <div class="row" data-k="adduser jean version interactive et debian-friendly de useradd"><code tabindex="0" role="button" title="Cliquer pour copier">adduser jean</code><span class="d">Version interactive et Debian-friendly de useradd</span></div>
+        <div class="row" data-k="passwd jean définir ou changer un mot de passe"><code tabindex="0" role="button" title="Cliquer pour copier">passwd jean</code><span class="d">Définir ou changer un mot de passe</span></div>
+        <div class="row" data-k="usermod -ag comptable jean ajouter à un groupe — le -a est vital, sans lui les autres groupes sont écrasés"><code tabindex="0" role="button" title="Cliquer pour copier">usermod -aG comptable jean</code><span class="d">Ajouter à un groupe — le <b>-a</b> est vital, sans lui les autres groupes sont écrasés</span></div>
+        <div class="row" data-k="usermod -l jean verrouiller un compte — -u pour déverrouiller"><code tabindex="0" role="button" title="Cliquer pour copier">usermod -L jean</code><span class="d">Verrouiller un compte — <b>-U</b> pour déverrouiller</span></div>
+        <div class="row" data-k="usermod -s /bin/bash jean changer le shell de connexion"><code tabindex="0" role="button" title="Cliquer pour copier">usermod -s /bin/bash jean</code><span class="d">Changer le shell de connexion</span></div>
+        <div class="row" data-k="userdel -r jean supprimer l&#x27;utilisateur et son répertoire personnel"><code tabindex="0" role="button" title="Cliquer pour copier">userdel -r jean</code><span class="d">Supprimer l'utilisateur <b>et</b> son répertoire personnel</span></div>
+        <div class="row" data-k="groupadd comptable créer un groupe — groupmod -n nouveau ancien renomme, groupdel supprime"><code tabindex="0" role="button" title="Cliquer pour copier">groupadd comptable</code><span class="d">Créer un groupe — <b>groupmod -n nouveau ancien</b> renomme, <b>groupdel</b> supprime</span></div>
+        <div class="row" data-k="id jean uid, gid et groupes d&#x27;un utilisateur"><code tabindex="0" role="button" title="Cliquer pour copier">id jean</code><span class="d">UID, GID et groupes d'un utilisateur</span></div>
+        <div class="row" data-k="groups jean lister uniquement ses groupes"><code tabindex="0" role="button" title="Cliquer pour copier">groups jean</code><span class="d">Lister uniquement ses groupes</span></div>
+        <div class="row" data-k="getent group comptable lister les membres d&#x27;un groupe"><code tabindex="0" role="button" title="Cliquer pour copier">getent group comptable</code><span class="d">Lister les membres d'un groupe</span></div>
+        <div class="row" data-k="cat /etc/passwd | awk -f: &#x27;{print $1}&#x27; lister tous les comptes de la machine"><code tabindex="0" role="button" title="Cliquer pour copier">cat /etc/passwd | awk -F: '{print $1}'</code><span class="d">Lister tous les comptes de la machine</span></div>
+        <div class="sub">Élévation de privilèges</div>
+        <div class="row" data-k="sudo commande exécuter une seule commande en root"><code tabindex="0" role="button" title="Cliquer pour copier">sudo commande</code><span class="d">Exécuter une seule commande en root</span></div>
+        <div class="row" data-k="sudo -i ouvrir un shell root (aussi sudo su -)"><code tabindex="0" role="button" title="Cliquer pour copier">sudo -i</code><span class="d">Ouvrir un shell root (aussi <b>sudo su -</b>)</span></div>
+        <div class="row" data-k="sudo -l voir ce que le compte courant a le droit de faire"><code tabindex="0" role="button" title="Cliquer pour copier">sudo -l</code><span class="d">Voir ce que le compte courant a le droit de faire</span></div>
+        <div class="row" data-k="su - jean changer d&#x27;utilisateur en rechargeant son environnement"><code tabindex="0" role="button" title="Cliquer pour copier">su - jean</code><span class="d">Changer d'utilisateur en rechargeant son environnement</span></div>
+        <div class="row" data-k="visudo éditer /etc/sudoers en vérifiant la syntaxe — ne jamais l&#x27;ouvrir avec nano"><code tabindex="0" role="button" title="Cliquer pour copier">visudo</code><span class="d">Éditer /etc/sudoers en vérifiant la syntaxe — ne jamais l'ouvrir avec nano</span></div>
+        <div class="row" data-k="jean all=(all:all) all ligne sudoers : tous les droits — nopasswd: retire la demande de mot de passe"><code tabindex="0" role="button" title="Cliquer pour copier">jean ALL=(ALL:ALL) ALL</code><span class="d">Ligne sudoers : tous les droits — <b>NOPASSWD:</b> retire la demande de mot de passe</span></div>
+        <div class="row" data-k="jean all=(all) /usr/bin/apt, /bin/systemctl sudo restreint à quelques binaires : le bon réflexe"><code tabindex="0" role="button" title="Cliquer pour copier">jean ALL=(ALL) /usr/bin/apt, /bin/systemctl</code><span class="d">Sudo restreint à quelques binaires : le bon réflexe</span></div>
+        <div class="sub">Les trois fichiers à connaître</div>
+        <div class="row" data-k="/etc/passwd comptes : login, uid, gid, home, shell"><code tabindex="0" role="button" title="Cliquer pour copier">/etc/passwd</code><span class="d">Comptes : login, UID, GID, home, shell</span></div>
+        <div class="row" data-k="/etc/shadow mots de passe hachés et politique d&#x27;expiration"><code tabindex="0" role="button" title="Cliquer pour copier">/etc/shadow</code><span class="d">Mots de passe hachés et politique d'expiration</span></div>
+        <div class="row" data-k="/etc/group groupes et leurs membres"><code tabindex="0" role="button" title="Cliquer pour copier">/etc/group</code><span class="d">Groupes et leurs membres</span></div>
+      </div>
+    </section>
+    <section class="grp" id="droits" data-n="17">
+      <h2>Droits et permissions <span class="cnt">17</span></h2>
+      <p class="lead">Le cœur du contrôle d&#x27;accès Unix.</p>
+      <div class="rows">
+        <div class="row" data-k="chmod 755 fichier droits en octal — -r pour appliquer récursivement"><code tabindex="0" role="button" title="Cliquer pour copier">chmod 755 fichier</code><span class="d">Droits en octal — <b>-R</b> pour appliquer récursivement</span></div>
+        <div class="row" data-k="chmod u+x fichier notation symbolique — u user, g group, o other, a all"><code tabindex="0" role="button" title="Cliquer pour copier">chmod u+x fichier</code><span class="d">Notation symbolique — <b>u</b> user, <b>g</b> group, <b>o</b> other, <b>a</b> all</span></div>
+        <div class="row" data-k="chmod +x script.sh rendre un script exécutable"><code tabindex="0" role="button" title="Cliquer pour copier">chmod +x script.sh</code><span class="d">Rendre un script exécutable</span></div>
+        <div class="row" data-k="chown jean:comptable fichier changer propriétaire et groupe — chown :groupe ne change que le groupe"><code tabindex="0" role="button" title="Cliquer pour copier">chown jean:comptable fichier</code><span class="d">Changer propriétaire et groupe — <b>chown :groupe</b> ne change que le groupe</span></div>
+        <div class="row" data-k="chown -r www-data:www-data /var/www/monsite donner un site web à l&#x27;utilisateur du serveur web"><code tabindex="0" role="button" title="Cliquer pour copier">chown -R www-data:www-data /var/www/monsite</code><span class="d">Donner un site web à l'utilisateur du serveur web</span></div>
+        <div class="row" data-k="chgrp comptable fichier changer uniquement le groupe"><code tabindex="0" role="button" title="Cliquer pour copier">chgrp comptable fichier</code><span class="d">Changer uniquement le groupe</span></div>
+        <div class="row" data-k="umask 022 masque appliqué aux droits des nouveaux fichiers"><code tabindex="0" role="button" title="Cliquer pour copier">umask 022</code><span class="d">Masque appliqué aux droits des nouveaux fichiers</span></div>
+        <div class="row" data-k="setfacl -m u:jean:rwx dossier droits fins pour un utilisateur précis — getfacl pour les lire"><code tabindex="0" role="button" title="Cliquer pour copier">setfacl -m u:jean:rwx dossier</code><span class="d">Droits fins pour un utilisateur précis — <b>getfacl</b> pour les lire</span></div>
+        <div class="sub">Lire un octal</div>
+        <div class="row" data-k="7 = rwx &amp;nbsp; 6 = rw- &amp;nbsp; 5 = r-x &amp;nbsp; 4 = r-- &amp;nbsp; 0 = --- on additionne : r=4, w=2, x=1"><code tabindex="0" role="button" title="Cliquer pour copier">7 = rwx &nbsp; 6 = rw- &nbsp; 5 = r-x &nbsp; 4 = r-- &nbsp; 0 = ---</code><span class="d">On additionne : r=4, w=2, x=1</span></div>
+        <div class="row" data-k="644 fichier lisible par tous, modifiable par le propriétaire"><code tabindex="0" role="button" title="Cliquer pour copier">644</code><span class="d">Fichier lisible par tous, modifiable par le propriétaire</span></div>
+        <div class="row" data-k="755 dossier ou script : traversable et exécutable par tous"><code tabindex="0" role="button" title="Cliquer pour copier">755</code><span class="d">Dossier ou script : traversable et exécutable par tous</span></div>
+        <div class="row" data-k="700 dossier strictement privé"><code tabindex="0" role="button" title="Cliquer pour copier">700</code><span class="d">Dossier strictement privé</span></div>
+        <div class="row" data-k="600 fichier strictement privé — les clés ssh privées"><code tabindex="0" role="button" title="Cliquer pour copier">600</code><span class="d">Fichier strictement privé — les clés SSH privées</span></div>
+        <div class="row" data-k="777 tout le monde peut tout faire : à proscrire"><code tabindex="0" role="button" title="Cliquer pour copier">777</code><span class="d">Tout le monde peut tout faire : à proscrire</span></div>
+        <div class="sub">Droits spéciaux</div>
+        <div class="row" data-k="chmod 4755 fichier suid : le binaire s&#x27;exécute avec les droits de son propriétaire"><code tabindex="0" role="button" title="Cliquer pour copier">chmod 4755 fichier</code><span class="d">SUID : le binaire s'exécute avec les droits de son propriétaire</span></div>
+        <div class="row" data-k="chmod 2770 /srv/samba/compta sgid : les fichiers créés héritent du groupe du dossier — utilisé pour les partages"><code tabindex="0" role="button" title="Cliquer pour copier">chmod 2770 /srv/samba/compta</code><span class="d">SGID : les fichiers créés héritent du groupe du dossier — utilisé pour les partages</span></div>
+        <div class="row" data-k="chmod 1777 /tmp sticky bit : chacun ne peut supprimer que ses propres fichiers"><code tabindex="0" role="button" title="Cliquer pour copier">chmod 1777 /tmp</code><span class="d">Sticky bit : chacun ne peut supprimer que ses propres fichiers</span></div>
+      </div>
+    </section>
+    <section class="grp" id="paquets" data-n="12">
+      <h2>Gestion des paquets <span class="cnt">12</span></h2>
+      <p class="lead">Installer, mettre à jour, nettoyer.</p>
+      <div class="rows">
+        <div class="row" data-k="apt update rafraîchir la liste des paquets disponibles — ne met rien à jour"><code tabindex="0" role="button" title="Cliquer pour copier">apt update</code><span class="d">Rafraîchir la liste des paquets disponibles — ne met rien à jour</span></div>
+        <div class="row" data-k="apt upgrade -y mettre à jour les paquets installés"><code tabindex="0" role="button" title="Cliquer pour copier">apt upgrade -y</code><span class="d">Mettre à jour les paquets installés</span></div>
+        <div class="row" data-k="apt full-upgrade mise à jour complète, y compris si des paquets doivent être retirés"><code tabindex="0" role="button" title="Cliquer pour copier">apt full-upgrade</code><span class="d">Mise à jour complète, y compris si des paquets doivent être retirés</span></div>
+        <div class="row" data-k="apt install nom_paquet installer"><code tabindex="0" role="button" title="Cliquer pour copier">apt install nom_paquet</code><span class="d">Installer</span></div>
+        <div class="row" data-k="apt remove nom_paquet désinstaller — apt purge supprime aussi la configuration"><code tabindex="0" role="button" title="Cliquer pour copier">apt remove nom_paquet</code><span class="d">Désinstaller — <b>apt purge</b> supprime aussi la configuration</span></div>
+        <div class="row" data-k="apt autoremove retirer les dépendances devenues inutiles"><code tabindex="0" role="button" title="Cliquer pour copier">apt autoremove</code><span class="d">Retirer les dépendances devenues inutiles</span></div>
+        <div class="row" data-k="apt search nom chercher un paquet — apt show affiche sa fiche"><code tabindex="0" role="button" title="Cliquer pour copier">apt search nom</code><span class="d">Chercher un paquet — <b>apt show</b> affiche sa fiche</span></div>
+        <div class="row" data-k="dpkg -l lister les paquets installés"><code tabindex="0" role="button" title="Cliquer pour copier">dpkg -l</code><span class="d">Lister les paquets installés</span></div>
+        <div class="row" data-k="dpkg -i paquet.deb installer un .deb téléchargé (nessus, zabbix…)"><code tabindex="0" role="button" title="Cliquer pour copier">dpkg -i paquet.deb</code><span class="d">Installer un .deb téléchargé (Nessus, Zabbix…)</span></div>
+        <div class="row" data-k="dpkg-reconfigure unattended-upgrades reconfigurer un paquet déjà installé"><code tabindex="0" role="button" title="Cliquer pour copier">dpkg-reconfigure unattended-upgrades</code><span class="d">Reconfigurer un paquet déjà installé</span></div>
+        <div class="row" data-k="export debian_frontend=noninteractive installer sans questions, dans un script"><code tabindex="0" role="button" title="Cliquer pour copier">export DEBIAN_FRONTEND=noninteractive</code><span class="d">Installer sans questions, dans un script</span></div>
+        <div class="row" data-k="yum install nom équivalent redhat/centos — dnf sur les versions récentes, rpm pour un paquet local"><code tabindex="0" role="button" title="Cliquer pour copier">yum install nom</code><span class="d">Équivalent RedHat/CentOS — <b>dnf</b> sur les versions récentes, <b>rpm</b> pour un paquet local</span></div>
+      </div>
+    </section>
+    <section class="grp" id="services" data-n="15">
+      <h2>Services systemd et journaux <span class="cnt">15</span></h2>
+      <p class="lead">Piloter les démons et lire ce qu&#x27;ils racontent.</p>
+      <div class="rows">
+        <div class="row" data-k="systemctl status ssh état d&#x27;un service : actif, échec, dernières lignes de log"><code tabindex="0" role="button" title="Cliquer pour copier">systemctl status ssh</code><span class="d">État d'un service : actif, échec, dernières lignes de log</span></div>
+        <div class="row" data-k="systemctl start | stop | restart ssh démarrer, arrêter, redémarrer"><code tabindex="0" role="button" title="Cliquer pour copier">systemctl start | stop | restart ssh</code><span class="d">Démarrer, arrêter, redémarrer</span></div>
+        <div class="row" data-k="systemctl reload nginx recharger la configuration sans couper le service"><code tabindex="0" role="button" title="Cliquer pour copier">systemctl reload nginx</code><span class="d">Recharger la configuration sans couper le service</span></div>
+        <div class="row" data-k="systemctl enable ssh démarrage automatique au boot — disable l&#x27;inverse"><code tabindex="0" role="button" title="Cliquer pour copier">systemctl enable ssh</code><span class="d">Démarrage automatique au boot — <b>disable</b> l'inverse</span></div>
+        <div class="row" data-k="systemctl enable --now zabbix-agent activer et démarrer en une seule commande"><code tabindex="0" role="button" title="Cliquer pour copier">systemctl enable --now zabbix-agent</code><span class="d">Activer et démarrer en une seule commande</span></div>
+        <div class="row" data-k="systemctl disable --now avahi-daemon couper et désactiver un service inutile (durcissement)"><code tabindex="0" role="button" title="Cliquer pour copier">systemctl disable --now avahi-daemon</code><span class="d">Couper et désactiver un service inutile (durcissement)</span></div>
+        <div class="row" data-k="systemctl list-units --type=service lister les services et leur état"><code tabindex="0" role="button" title="Cliquer pour copier">systemctl list-units --type=service</code><span class="d">Lister les services et leur état</span></div>
+        <div class="row" data-k="service cron start ancienne syntaxe sysv, encore présente dans beaucoup de docs"><code tabindex="0" role="button" title="Cliquer pour copier">service cron start</code><span class="d">Ancienne syntaxe SysV, encore présente dans beaucoup de docs</span></div>
+        <div class="row" data-k="systemctl reboot redémarrer la machine"><code tabindex="0" role="button" title="Cliquer pour copier">systemctl reboot</code><span class="d">Redémarrer la machine</span></div>
+        <div class="sub">Journaux</div>
+        <div class="row" data-k="journalctl -u ssh -f suivre en direct les logs d&#x27;un service"><code tabindex="0" role="button" title="Cliquer pour copier">journalctl -u ssh -f</code><span class="d">Suivre en direct les logs d'un service</span></div>
+        <div class="row" data-k="journalctl --since &quot;1 hour ago&quot; fenêtre temporelle — -b depuis le dernier démarrage"><code tabindex="0" role="button" title="Cliquer pour copier">journalctl --since "1 hour ago"</code><span class="d">Fenêtre temporelle — <b>-b</b> depuis le dernier démarrage</span></div>
+        <div class="row" data-k="/var/log/syslog journal système général"><code tabindex="0" role="button" title="Cliquer pour copier">/var/log/syslog</code><span class="d">Journal système général</span></div>
+        <div class="row" data-k="/var/log/auth.log authentifications, sudo, ssh"><code tabindex="0" role="button" title="Cliquer pour copier">/var/log/auth.log</code><span class="d">Authentifications, sudo, SSH</span></div>
+        <div class="row" data-k="/var/log/kern.log messages du noyau"><code tabindex="0" role="button" title="Cliquer pour copier">/var/log/kern.log</code><span class="d">Messages du noyau</span></div>
+        <div class="row" data-k="/var/log/dpkg.log historique des installations de paquets"><code tabindex="0" role="button" title="Cliquer pour copier">/var/log/dpkg.log</code><span class="d">Historique des installations de paquets</span></div>
+      </div>
+    </section>
+    <section class="grp" id="process" data-n="9">
+      <h2>Processus et ressources <span class="cnt">9</span></h2>
+      <p class="lead">Voir ce qui tourne et reprendre la main.</p>
+      <div class="rows">
+        <div class="row" data-k="ps aux instantané de tous les processus"><code tabindex="0" role="button" title="Cliquer pour copier">ps aux</code><span class="d">Instantané de tous les processus</span></div>
+        <div class="row" data-k="top vue temps réel — htop en version confortable"><code tabindex="0" role="button" title="Cliquer pour copier">top</code><span class="d">Vue temps réel — <b>htop</b> en version confortable</span></div>
+        <div class="row" data-k="kill pid demander l&#x27;arrêt d&#x27;un processus"><code tabindex="0" role="button" title="Cliquer pour copier">kill PID</code><span class="d">Demander l'arrêt d'un processus</span></div>
+        <div class="row" data-k="kill -9 pid forcer l&#x27;arrêt, en dernier recours"><code tabindex="0" role="button" title="Cliquer pour copier">kill -9 PID</code><span class="d">Forcer l'arrêt, en dernier recours</span></div>
+        <div class="row" data-k="pkill nom_processus tuer par nom plutôt que par pid"><code tabindex="0" role="button" title="Cliquer pour copier">pkill nom_processus</code><span class="d">Tuer par nom plutôt que par PID</span></div>
+        <div class="row" data-k="pgrep nom trouver le pid d&#x27;un processus — pidof fait de même"><code tabindex="0" role="button" title="Cliquer pour copier">pgrep nom</code><span class="d">Trouver le PID d'un processus — <b>pidof</b> fait de même</span></div>
+        <div class="row" data-k="free -h mémoire utilisée et disponible"><code tabindex="0" role="button" title="Cliquer pour copier">free -h</code><span class="d">Mémoire utilisée et disponible</span></div>
+        <div class="row" data-k="df -h occupation des systèmes de fichiers"><code tabindex="0" role="button" title="Cliquer pour copier">df -h</code><span class="d">Occupation des systèmes de fichiers</span></div>
+        <div class="row" data-k="du -sh /var/log ce qui remplit vraiment le disque"><code tabindex="0" role="button" title="Cliquer pour copier">du -sh /var/log</code><span class="d">Ce qui remplit vraiment le disque</span></div>
+      </div>
+    </section>
+    <section class="grp" id="reseau" data-n="17">
+      <h2>Réseau — diagnostic <span class="cnt">17</span></h2>
+      <p class="lead">Adressage, routes, ports, résolution de noms.</p>
+      <div class="rows">
+        <div class="row" data-k="ip a interfaces et adresses ip — ip -6 addr show pour ipv6"><code tabindex="0" role="button" title="Cliquer pour copier">ip a</code><span class="d">Interfaces et adresses IP — <b>ip -6 addr show</b> pour IPv6</span></div>
+        <div class="row" data-k="ip r table de routage — ip -6 route show en ipv6"><code tabindex="0" role="button" title="Cliquer pour copier">ip r</code><span class="d">Table de routage — <b>ip -6 route show</b> en IPv6</span></div>
+        <div class="row" data-k="ifconfig ancienne commande, remplacée par ip mais encore vue en examen"><code tabindex="0" role="button" title="Cliquer pour copier">ifconfig</code><span class="d">Ancienne commande, remplacée par <b>ip</b> mais encore vue en examen</span></div>
+        <div class="row" data-k="ss -tuln ports en écoute — -p ajoute le processus, d&#x27;où ss -tulnp"><code tabindex="0" role="button" title="Cliquer pour copier">ss -tuln</code><span class="d">Ports en écoute — <b>-p</b> ajoute le processus, d'où <b>ss -tulnp</b></span></div>
+        <div class="row" data-k="ss -tulpn | grep 9100 vérifier qu&#x27;un service écoute bien sur son port"><code tabindex="0" role="button" title="Cliquer pour copier">ss -tulpn | grep 9100</code><span class="d">Vérifier qu'un service écoute bien sur son port</span></div>
+        <div class="row" data-k="netstat -tuln équivalent historique de ss — netstat -r pour les routes"><code tabindex="0" role="button" title="Cliquer pour copier">netstat -tuln</code><span class="d">Équivalent historique de ss — <b>netstat -r</b> pour les routes</span></div>
+        <div class="row" data-k="ping -c 4 192.168.1.1 tester la connectivité — ping6 ::1 en ipv6"><code tabindex="0" role="button" title="Cliquer pour copier">ping -c 4 192.168.1.1</code><span class="d">Tester la connectivité — <b>ping6 ::1</b> en IPv6</span></div>
+        <div class="row" data-k="traceroute 192.168.2.1 suivre le chemin réseau saut par saut"><code tabindex="0" role="button" title="Cliquer pour copier">traceroute 192.168.2.1</code><span class="d">Suivre le chemin réseau saut par saut</span></div>
+        <div class="row" data-k="dig +short monsite.exemple.com interroger le dns — nslookup en version simple"><code tabindex="0" role="button" title="Cliquer pour copier">dig +short monsite.exemple.com</code><span class="d">Interroger le DNS — <b>nslookup</b> en version simple</span></div>
+        <div class="row" data-k="nc -zv ip port tester l&#x27;ouverture d&#x27;un port sans rien envoyer"><code tabindex="0" role="button" title="Cliquer pour copier">nc -zv ip port</code><span class="d">Tester l'ouverture d'un port sans rien envoyer</span></div>
+        <div class="row" data-k="nmcli con show connexions gérées par networkmanager"><code tabindex="0" role="button" title="Cliquer pour copier">nmcli con show</code><span class="d">Connexions gérées par NetworkManager</span></div>
+        <div class="row" data-k="ifreload -a réappliquer la configuration réseau"><code tabindex="0" role="button" title="Cliquer pour copier">ifreload -a</code><span class="d">Réappliquer la configuration réseau</span></div>
+        <div class="row" data-k="curl -i https://monsite.exemple.com récupérer uniquement les en-têtes http"><code tabindex="0" role="button" title="Cliquer pour copier">curl -I https://monsite.exemple.com</code><span class="d">Récupérer uniquement les en-têtes HTTP</span></div>
+        <div class="row" data-k="curl -fssl https://get.docker.com | sudo sh télécharger et exécuter un script d&#x27;installation officiel"><code tabindex="0" role="button" title="Cliquer pour copier">curl -fsSL https://get.docker.com | sudo sh</code><span class="d">Télécharger et exécuter un script d'installation officiel</span></div>
+        <div class="row" data-k="wget https://exemple.com/fichier.tgz télécharger un fichier — -qo - envoie vers la sortie standard"><code tabindex="0" role="button" title="Cliquer pour copier">wget https://exemple.com/fichier.tgz</code><span class="d">Télécharger un fichier — <b>-qO -</b> envoie vers la sortie standard</span></div>
+        <div class="row" data-k="ssh user@srv &quot;sudo tcpdump -u -s0 -w - not port 22&quot; | wireshark -k -i - capturer à distance et analyser en local"><code tabindex="0" role="button" title="Cliquer pour copier">ssh user@srv "sudo tcpdump -U -s0 -w - not port 22" | wireshark -k -i -</code><span class="d">Capturer à distance et analyser en local</span></div>
+        <div class="row" data-k="/etc/network/interfaces configuration réseau debian classique"><code tabindex="0" role="button" title="Cliquer pour copier">/etc/network/interfaces</code><span class="d">Configuration réseau Debian classique</span></div>
+      </div>
+    </section>
+    <section class="grp" id="ssh" data-n="21">
+      <h2>SSH et transferts <span class="cnt">21</span></h2>
+      <p class="lead">Prise en main distante, clés, copie de fichiers.</p>
+      <div class="rows">
+        <div class="row" data-k="ssh jean@192.168.1.10 se connecter — -v ou -vvv pour déboguer"><code tabindex="0" role="button" title="Cliquer pour copier">ssh jean@192.168.1.10</code><span class="d">Se connecter — <b>-v</b> ou <b>-vvv</b> pour déboguer</span></div>
+        <div class="row" data-k="ssh -p 2222 jean@192.168.1.10 se connecter sur un port non standard"><code tabindex="0" role="button" title="Cliquer pour copier">ssh -p 2222 jean@192.168.1.10</code><span class="d">Se connecter sur un port non standard</span></div>
+        <div class="row" data-k="ssh -i ~/.ssh/ma_cle jean@ip utiliser une clé précise"><code tabindex="0" role="button" title="Cliquer pour copier">ssh -i ~/.ssh/ma_cle jean@ip</code><span class="d">Utiliser une clé précise</span></div>
+        <div class="row" data-k="ssh -l 8080:localhost:80 jean@ip tunnel local : rediriger un port distant vers sa machine"><code tabindex="0" role="button" title="Cliquer pour copier">ssh -L 8080:localhost:80 jean@ip</code><span class="d">Tunnel local : rediriger un port distant vers sa machine</span></div>
+        <div class="row" data-k="ssh-keygen -t rsa -b 4096 -c &quot;jean@poste&quot; générer une paire de clés — -t ed25519 en algorithme moderne"><code tabindex="0" role="button" title="Cliquer pour copier">ssh-keygen -t rsa -b 4096 -C "jean@poste"</code><span class="d">Générer une paire de clés — <b>-t ed25519</b> en algorithme moderne</span></div>
+        <div class="row" data-k="ssh-copy-id jean@ip déposer sa clé publique sur le serveur"><code tabindex="0" role="button" title="Cliquer pour copier">ssh-copy-id jean@ip</code><span class="d">Déposer sa clé publique sur le serveur</span></div>
+        <div class="row" data-k="ssh-agent / ssh-add garder la clé privée déverrouillée le temps de la session"><code tabindex="0" role="button" title="Cliquer pour copier">ssh-agent / ssh-add</code><span class="d">Garder la clé privée déverrouillée le temps de la session</span></div>
+        <div class="row" data-k="scp fichier jean@ip:/chemin/ copier un fichier — -r pour un dossier"><code tabindex="0" role="button" title="Cliquer pour copier">scp fichier jean@ip:/chemin/</code><span class="d">Copier un fichier — <b>-r</b> pour un dossier</span></div>
+        <div class="row" data-k="sftp jean@serveur session de transfert interactive"><code tabindex="0" role="button" title="Cliquer pour copier">sftp jean@serveur</code><span class="d">Session de transfert interactive</span></div>
+        <div class="row" data-k="rsync -avh --delete /source/ /destination/ synchroniser : -a archive, -v verbeux, -z compresse, --delete reflète les suppressions"><code tabindex="0" role="button" title="Cliquer pour copier">rsync -avh --delete /source/ /destination/</code><span class="d">Synchroniser : <b>-a</b> archive, <b>-v</b> verbeux, <b>-z</b> compresse, <b>--delete</b> reflète les suppressions</span></div>
+        <div class="row" data-k="chmod 700 ~/.ssh &amp;amp;&amp;amp; chmod 600 ~/.ssh/authorized_keys sans ces droits, ssh refuse la clé"><code tabindex="0" role="button" title="Cliquer pour copier">chmod 700 ~/.ssh &amp;&amp; chmod 600 ~/.ssh/authorized_keys</code><span class="d">Sans ces droits, SSH refuse la clé</span></div>
+        <div class="row" data-k="sshd -t vérifier la syntaxe de sshd_config avant de recharger"><code tabindex="0" role="button" title="Cliquer pour copier">sshd -t</code><span class="d">Vérifier la syntaxe de sshd_config avant de recharger</span></div>
+        <div class="row" data-k="systemctl reload ssh appliquer la nouvelle configuration"><code tabindex="0" role="button" title="Cliquer pour copier">systemctl reload ssh</code><span class="d">Appliquer la nouvelle configuration</span></div>
+        <div class="sub">Durcir /etc/ssh/sshd_config</div>
+        <div class="row" data-k="port 2222 sortir du port 22 pour réduire le bruit de fond"><code tabindex="0" role="button" title="Cliquer pour copier">Port 2222</code><span class="d">Sortir du port 22 pour réduire le bruit de fond</span></div>
+        <div class="row" data-k="permitrootlogin no interdire la connexion directe en root"><code tabindex="0" role="button" title="Cliquer pour copier">PermitRootLogin no</code><span class="d">Interdire la connexion directe en root</span></div>
+        <div class="row" data-k="passwordauthentication no n&#x27;autoriser que l&#x27;authentification par clé"><code tabindex="0" role="button" title="Cliquer pour copier">PasswordAuthentication no</code><span class="d">N'autoriser que l'authentification par clé</span></div>
+        <div class="row" data-k="permitemptypasswords no refuser les mots de passe vides"><code tabindex="0" role="button" title="Cliquer pour copier">PermitEmptyPasswords no</code><span class="d">Refuser les mots de passe vides</span></div>
+        <div class="row" data-k="maxauthtries 3 limiter les tentatives par connexion"><code tabindex="0" role="button" title="Cliquer pour copier">MaxAuthTries 3</code><span class="d">Limiter les tentatives par connexion</span></div>
+        <div class="row" data-k="logingracetime 30 délai maximum pour s&#x27;authentifier"><code tabindex="0" role="button" title="Cliquer pour copier">LoginGraceTime 30</code><span class="d">Délai maximum pour s'authentifier</span></div>
+        <div class="row" data-k="allowusers jean bob liste blanche des comptes autorisés"><code tabindex="0" role="button" title="Cliquer pour copier">AllowUsers jean bob</code><span class="d">Liste blanche des comptes autorisés</span></div>
+        <div class="row" data-k="x11forwarding no couper le déport graphique s&#x27;il est inutile"><code tabindex="0" role="button" title="Cliquer pour copier">X11Forwarding no</code><span class="d">Couper le déport graphique s'il est inutile</span></div>
+      </div>
+    </section>
+    <section class="grp" id="disques" data-n="15">
+      <h2>Disques, partitions et montage <span class="cnt">15</span></h2>
+      <p class="lead">Du disque brut au point de montage.</p>
+      <div class="rows">
+        <div class="row" data-k="lsblk vue arborescente des disques et partitions"><code tabindex="0" role="button" title="Cliquer pour copier">lsblk</code><span class="d">Vue arborescente des disques et partitions</span></div>
+        <div class="row" data-k="fdisk -l /dev/sdb détail des partitions d&#x27;un disque"><code tabindex="0" role="button" title="Cliquer pour copier">fdisk -l /dev/sdb</code><span class="d">Détail des partitions d'un disque</span></div>
+        <div class="row" data-k="blkid /dev/sdb uuid et type de système de fichiers — utile pour /etc/fstab"><code tabindex="0" role="button" title="Cliquer pour copier">blkid /dev/sdb</code><span class="d">UUID et type de système de fichiers — utile pour /etc/fstab</span></div>
+        <div class="row" data-k="mkfs.ext4 /dev/sdb1 formater une partition"><code tabindex="0" role="button" title="Cliquer pour copier">mkfs.ext4 /dev/sdb1</code><span class="d">Formater une partition</span></div>
+        <div class="row" data-k="mount /dev/sdb1 /mnt/data monter manuellement"><code tabindex="0" role="button" title="Cliquer pour copier">mount /dev/sdb1 /mnt/data</code><span class="d">Monter manuellement</span></div>
+        <div class="row" data-k="umount /mnt/data démonter"><code tabindex="0" role="button" title="Cliquer pour copier">umount /mnt/data</code><span class="d">Démonter</span></div>
+        <div class="row" data-k="mount -a monter tout ce qui est déclaré dans /etc/fstab"><code tabindex="0" role="button" title="Cliquer pour copier">mount -a</code><span class="d">Monter tout ce qui est déclaré dans /etc/fstab</span></div>
+        <div class="row" data-k="/etc/fstab montages permanents, appliqués au démarrage"><code tabindex="0" role="button" title="Cliquer pour copier">/etc/fstab</code><span class="d">Montages permanents, appliqués au démarrage</span></div>
+        <div class="row" data-k="dd if=/dev/urandom of=/root/luks.key bs=1024 count=4 générer un fichier binaire (ici une clé de chiffrement)"><code tabindex="0" role="button" title="Cliquer pour copier">dd if=/dev/urandom of=/root/luks.key bs=1024 count=4</code><span class="d">Générer un fichier binaire (ici une clé de chiffrement)</span></div>
+        <div class="row" data-k="sync forcer l&#x27;écriture réelle des données sur le disque"><code tabindex="0" role="button" title="Cliquer pour copier">sync</code><span class="d">Forcer l'écriture réelle des données sur le disque</span></div>
+        <div class="sub">Chiffrement LUKS</div>
+        <div class="row" data-k="cryptsetup luksformat --type luks2 /dev/sdb initialiser un conteneur chiffré"><code tabindex="0" role="button" title="Cliquer pour copier">cryptsetup luksFormat --type luks2 /dev/sdb</code><span class="d">Initialiser un conteneur chiffré</span></div>
+        <div class="row" data-k="cryptsetup luksopen /dev/sdb datavault ouvrir le volume — luksclose le referme"><code tabindex="0" role="button" title="Cliquer pour copier">cryptsetup luksOpen /dev/sdb datavault</code><span class="d">Ouvrir le volume — <b>luksClose</b> le referme</span></div>
+        <div class="row" data-k="cryptsetup luksaddkey /dev/sdb ajouter une clé de secours — luksremovekey en retire une"><code tabindex="0" role="button" title="Cliquer pour copier">cryptsetup luksAddKey /dev/sdb</code><span class="d">Ajouter une clé de secours — <b>luksRemoveKey</b> en retire une</span></div>
+        <div class="row" data-k="cryptsetup luksdump /dev/sdb voir les emplacements de clés utilisés"><code tabindex="0" role="button" title="Cliquer pour copier">cryptsetup luksDump /dev/sdb</code><span class="d">Voir les emplacements de clés utilisés</span></div>
+        <div class="row" data-k="cryptsetup luksheaderbackup /dev/sdb sauvegarder l&#x27;en-tête : sans lui, les données sont perdues"><code tabindex="0" role="button" title="Cliquer pour copier">cryptsetup luksHeaderBackup /dev/sdb</code><span class="d">Sauvegarder l'en-tête : sans lui, les données sont perdues</span></div>
+      </div>
+    </section>
+    <section class="grp" id="archives" data-n="7">
+      <h2>Archives et compression <span class="cnt">7</span></h2>
+      <p class="lead">Empaqueter, extraire, compresser.</p>
+      <div class="rows">
+        <div class="row" data-k="tar -czvf archive.tar.gz dossier/ créer une archive compressée gzip"><code tabindex="0" role="button" title="Cliquer pour copier">tar -czvf archive.tar.gz dossier/</code><span class="d">Créer une archive compressée gzip</span></div>
+        <div class="row" data-k="tar -xzvf archive.tar.gz extraire — -c /destination choisit où"><code tabindex="0" role="button" title="Cliquer pour copier">tar -xzvf archive.tar.gz</code><span class="d">Extraire — <b>-C /destination</b> choisit où</span></div>
+        <div class="row" data-k="tar -tzvf archive.tar.gz lister le contenu sans extraire"><code tabindex="0" role="button" title="Cliquer pour copier">tar -tzvf archive.tar.gz</code><span class="d">Lister le contenu sans extraire</span></div>
+        <div class="row" data-k="tar -cjvf archive.tar.bz2 dossier/ même chose en compression bzip2"><code tabindex="0" role="button" title="Cliquer pour copier">tar -cjvf archive.tar.bz2 dossier/</code><span class="d">Même chose en compression bzip2</span></div>
+        <div class="row" data-k="gzip fichier compresser un fichier seul — gunzip décompresse"><code tabindex="0" role="button" title="Cliquer pour copier">gzip fichier</code><span class="d">Compresser un fichier seul — <b>gunzip</b> décompresse</span></div>
+        <div class="row" data-k="zcat fichier.sql.gz | mysql -u user -p base décompresser à la volée sans fichier intermédiaire"><code tabindex="0" role="button" title="Cliquer pour copier">zcat fichier.sql.gz | mysql -u user -p base</code><span class="d">Décompresser à la volée sans fichier intermédiaire</span></div>
+        <div class="row" data-k="zip -r archive.zip dossier/ archive zip — unzip archive.zip -d /dest/ pour extraire"><code tabindex="0" role="button" title="Cliquer pour copier">zip -r archive.zip dossier/</code><span class="d">Archive zip — <b>unzip archive.zip -d /dest/</b> pour extraire</span></div>
+      </div>
+    </section>
+    <section class="grp" id="sauvegarde" data-n="12">
+      <h2>Sauvegarde et planification <span class="cnt">12</span></h2>
+      <p class="lead">Automatiser ce qu&#x27;on ne veut pas oublier.</p>
+      <div class="rows">
+        <div class="row" data-k="rsync -av /home/travail/ /tmp/travail/ copie incrémentale locale — le / final compte"><code tabindex="0" role="button" title="Cliquer pour copier">rsync -av /home/Travail/ /tmp/Travail/</code><span class="d">Copie incrémentale locale — le <b>/</b> final compte</span></div>
+        <div class="row" data-k="rsync -avz /source/ user@ip:/destination/ sauvegarde vers un serveur distant, compressée"><code tabindex="0" role="button" title="Cliquer pour copier">rsync -avz /source/ user@ip:/destination/</code><span class="d">Sauvegarde vers un serveur distant, compressée</span></div>
+        <div class="row" data-k="crontab -e éditer les tâches planifiées de l&#x27;utilisateur courant"><code tabindex="0" role="button" title="Cliquer pour copier">crontab -e</code><span class="d">Éditer les tâches planifiées de l'utilisateur courant</span></div>
+        <div class="row" data-k="crontab -l lister ses tâches — crontab -r les supprime toutes"><code tabindex="0" role="button" title="Cliquer pour copier">crontab -l</code><span class="d">Lister ses tâches — <b>crontab -r</b> les supprime toutes</span></div>
+        <div class="row" data-k="/etc/crontab crontab système, avec une colonne utilisateur en plus"><code tabindex="0" role="button" title="Cliquer pour copier">/etc/crontab</code><span class="d">Crontab système, avec une colonne utilisateur en plus</span></div>
+        <div class="sub">Lire une expression cron</div>
+        <div class="row" data-k="0 2 * * * /scripts/backup.sh tous les jours à 2h00"><code tabindex="0" role="button" title="Cliquer pour copier">0 2 * * * /scripts/backup.sh</code><span class="d">Tous les jours à 2h00</span></div>
+        <div class="row" data-k="*/5 * * * * /scripts/check.sh toutes les 5 minutes"><code tabindex="0" role="button" title="Cliquer pour copier">*/5 * * * * /scripts/check.sh</code><span class="d">Toutes les 5 minutes</span></div>
+        <div class="row" data-k="0 0 * * 0 /scripts/weekly.sh tous les dimanches à minuit"><code tabindex="0" role="button" title="Cliquer pour copier">0 0 * * 0 /scripts/weekly.sh</code><span class="d">Tous les dimanches à minuit</span></div>
+        <div class="row" data-k="30 8 1 * * /scripts/monthly.sh le 1er de chaque mois à 8h30"><code tabindex="0" role="button" title="Cliquer pour copier">30 8 1 * * /scripts/monthly.sh</code><span class="d">Le 1er de chaque mois à 8h30</span></div>
+        <div class="row" data-k="@reboot /scripts/startup.sh à chaque démarrage de la machine"><code tabindex="0" role="button" title="Cliquer pour copier">@reboot /scripts/startup.sh</code><span class="d">À chaque démarrage de la machine</span></div>
+        <div class="sub">Rotation des sauvegardes</div>
+        <div class="row" data-k="ls -1t $dest | tail -n +15 | xargs -i{} rm -rf $dest/{} ne garder que les 14 dernières sauvegardes"><code tabindex="0" role="button" title="Cliquer pour copier">ls -1t $DEST | tail -n +15 | xargs -I{} rm -rf $DEST/{}</code><span class="d">Ne garder que les 14 dernières sauvegardes</span></div>
+        <div class="row" data-k="find /backup/ -maxdepth 1 -type d -mtime +7 -exec rm -rf {} \; supprimer les sauvegardes de plus d&#x27;une semaine"><code tabindex="0" role="button" title="Cliquer pour copier">find /backup/ -maxdepth 1 -type d -mtime +7 -exec rm -rf {} \;</code><span class="d">Supprimer les sauvegardes de plus d'une semaine</span></div>
+      </div>
+    </section>
+    <section class="grp" id="bash" data-n="22">
+      <h2>Scripts Bash <span class="cnt">22</span></h2>
+      <p class="lead">La syntaxe vue en module « Automatiser des tâches ».</p>
+      <div class="rows">
+        <div class="row" data-k="#!/bin/bash shebang : première ligne obligatoire du script"><code tabindex="0" role="button" title="Cliquer pour copier">#!/bin/bash</code><span class="d">Shebang : première ligne obligatoire du script</span></div>
+        <div class="row" data-k="chmod +x mon_script.sh rendre le script exécutable"><code tabindex="0" role="button" title="Cliquer pour copier">chmod +x mon_script.sh</code><span class="d">Rendre le script exécutable</span></div>
+        <div class="row" data-k="./mon_script.sh exécuter — bash script.sh et sh script.sh marchent aussi"><code tabindex="0" role="button" title="Cliquer pour copier">./mon_script.sh</code><span class="d">Exécuter — <b>bash script.sh</b> et <b>sh script.sh</b> marchent aussi</span></div>
+        <div class="row" data-k="source mon_script.sh exécuter dans le shell courant (les variables restent définies)"><code tabindex="0" role="button" title="Cliquer pour copier">source mon_script.sh</code><span class="d">Exécuter dans le shell courant (les variables restent définies)</span></div>
+        <div class="row" data-k="bash -n mon_script.sh vérifier la syntaxe sans rien exécuter"><code tabindex="0" role="button" title="Cliquer pour copier">bash -n mon_script.sh</code><span class="d">Vérifier la syntaxe sans rien exécuter</span></div>
+        <div class="row" data-k="set -eeuo pipefail arrêter le script à la première erreur — à mettre en tête de tout script sérieux"><code tabindex="0" role="button" title="Cliquer pour copier">set -Eeuo pipefail</code><span class="d">Arrêter le script à la première erreur — à mettre en tête de tout script sérieux</span></div>
+        <div class="sub">Variables</div>
+        <div class="row" data-k="nom=valeur affectation — aucun espace autour du ="><code tabindex="0" role="button" title="Cliquer pour copier">NOM=valeur</code><span class="d">Affectation — <b>aucun espace</b> autour du <b>=</b></span></div>
+        <div class="row" data-k="${nom} utiliser la variable — les accolades évitent les ambiguïtés"><code tabindex="0" role="button" title="Cliquer pour copier">${NOM}</code><span class="d">Utiliser la variable — les accolades évitent les ambiguïtés</span></div>
+        <div class="row" data-k="date=$(date +%y%m%d_%h%m%s) stocker le résultat d&#x27;une commande"><code tabindex="0" role="button" title="Cliquer pour copier">DATE=$(date +%Y%m%d_%H%M%S)</code><span class="d">Stocker le résultat d'une commande</span></div>
+        <div class="row" data-k="${1:-ssh} valeur par défaut si le paramètre est absent"><code tabindex="0" role="button" title="Cliquer pour copier">${1:-ssh}</code><span class="d">Valeur par défaut si le paramètre est absent</span></div>
+        <div class="row" data-k="${#var} &amp;nbsp; ${var^^} &amp;nbsp; ${var,,} &amp;nbsp; ${var:0:3} &amp;nbsp; ${var/ancien/nouveau} longueur, majuscules, minuscules, extraction, remplacement"><code tabindex="0" role="button" title="Cliquer pour copier">${#VAR} &nbsp; ${VAR^^} &nbsp; ${VAR,,} &nbsp; ${VAR:0:3} &nbsp; ${VAR/ancien/nouveau}</code><span class="d">Longueur, majuscules, minuscules, extraction, remplacement</span></div>
+        <div class="row" data-k="$0 $1 $2 &amp;nbsp; $@ &amp;nbsp; $# &amp;nbsp; $? &amp;nbsp; $$ nom du script, arguments, tous les arguments, leur nombre, code de retour, pid"><code tabindex="0" role="button" title="Cliquer pour copier">$0 $1 $2 &nbsp; $@ &nbsp; $# &nbsp; $? &nbsp; $$</code><span class="d">Nom du script, arguments, tous les arguments, leur nombre, code de retour, PID</span></div>
+        <div class="row" data-k="$user &amp;nbsp; $hostname &amp;nbsp; $pwd variables d&#x27;environnement toujours disponibles"><code tabindex="0" role="button" title="Cliquer pour copier">$USER &nbsp; $HOSTNAME &nbsp; $PWD</code><span class="d">Variables d'environnement toujours disponibles</span></div>
+        <div class="sub">Tests et conditions</div>
+        <div class="row" data-k="[ -f fichier ] le fichier existe et est un fichier régulier"><code tabindex="0" role="button" title="Cliquer pour copier">[ -f fichier ]</code><span class="d">Le fichier existe et est un fichier régulier</span></div>
+        <div class="row" data-k="[ -d dossier ] le dossier existe — -e teste juste l&#x27;existence"><code tabindex="0" role="button" title="Cliquer pour copier">[ -d dossier ]</code><span class="d">Le dossier existe — <b>-e</b> teste juste l'existence</span></div>
+        <div class="row" data-k="[ -r ] [ -w ] [ -x ] lisible, modifiable, exécutable — -s non vide"><code tabindex="0" role="button" title="Cliquer pour copier">[ -r ] [ -w ] [ -x ]</code><span class="d">Lisible, modifiable, exécutable — <b>-s</b> non vide</span></div>
+        <div class="row" data-k="[ -z &quot;$var&quot; ] la variable est vide — -n teste l&#x27;inverse"><code tabindex="0" role="button" title="Cliquer pour copier">[ -z "$VAR" ]</code><span class="d">La variable est vide — <b>-n</b> teste l'inverse</span></div>
+        <div class="row" data-k="-eq -ne -lt -le -gt -ge comparaisons numériques"><code tabindex="0" role="button" title="Cliquer pour copier">-eq -ne -lt -le -gt -ge</code><span class="d">Comparaisons numériques</span></div>
+        <div class="row" data-k="[ &quot;$nom&quot; = &quot;jean&quot; ] comparaison de chaînes — != pour différent"><code tabindex="0" role="button" title="Cliquer pour copier">[ "$NOM" = "jean" ]</code><span class="d">Comparaison de chaînes — <b>!=</b> pour différent</span></div>
+        <div class="row" data-k="[ $a -gt 0 ] &amp;amp;&amp;amp; [ $b -gt 0 ] et logique — || pour le ou"><code tabindex="0" role="button" title="Cliquer pour copier">[ $A -gt 0 ] &amp;&amp; [ $B -gt 0 ]</code><span class="d">ET logique — <b>||</b> pour le OU</span></div>
+        <div class="row" data-k="if … then … else … fi structure conditionnelle"><code tabindex="0" role="button" title="Cliquer pour copier">if … then … else … fi</code><span class="d">Structure conditionnelle</span></div>
+        <div class="row" data-k="while read ligne; do … done &amp;lt; fichier.txt boucler sur les lignes d&#x27;un fichier"><code tabindex="0" role="button" title="Cliquer pour copier">while read ligne; do … done &lt; fichier.txt</code><span class="d">Boucler sur les lignes d'un fichier</span></div>
+      </div>
+    </section>
+    <section class="grp" id="durcissement" data-n="31">
+      <h2>Sécurité et durcissement <span class="cnt">31</span></h2>
+      <p class="lead">Pare-feu, détection d&#x27;intrusion, intégrité, chiffrement.</p>
+      <div class="rows">
+        <div class="sub">Pare-feu UFW</div>
+        <div class="row" data-k="ufw status verbose état détaillé des règles"><code tabindex="0" role="button" title="Cliquer pour copier">ufw status verbose</code><span class="d">État détaillé des règles</span></div>
+        <div class="row" data-k="ufw default deny incoming politique par défaut : tout refuser en entrée"><code tabindex="0" role="button" title="Cliquer pour copier">ufw default deny incoming</code><span class="d">Politique par défaut : tout refuser en entrée</span></div>
+        <div class="row" data-k="ufw allow openssh autoriser par nom de service — ou par port : ufw allow 2222/tcp"><code tabindex="0" role="button" title="Cliquer pour copier">ufw allow OpenSSH</code><span class="d">Autoriser par nom de service — ou par port : <b>ufw allow 2222/tcp</b></span></div>
+        <div class="row" data-k="ufw allow from 192.168.1.0/24 to any port nfs autoriser une source précise vers un service précis"><code tabindex="0" role="button" title="Cliquer pour copier">ufw allow from 192.168.1.0/24 to any port nfs</code><span class="d">Autoriser une source précise vers un service précis</span></div>
+        <div class="row" data-k="ufw enable activer le pare-feu — ufw delete allow 80/tcp retire une règle"><code tabindex="0" role="button" title="Cliquer pour copier">ufw enable</code><span class="d">Activer le pare-feu — <b>ufw delete allow 80/tcp</b> retire une règle</span></div>
+        <div class="sub">Pare-feu iptables</div>
+        <div class="row" data-k="iptables -l -v -n lister les règles avec compteurs"><code tabindex="0" role="button" title="Cliquer pour copier">iptables -L -v -n</code><span class="d">Lister les règles avec compteurs</span></div>
+        <div class="row" data-k="iptables -p input drop politique par défaut : bloquer"><code tabindex="0" role="button" title="Cliquer pour copier">iptables -P INPUT DROP</code><span class="d">Politique par défaut : bloquer</span></div>
+        <div class="row" data-k="iptables -a input -i lo -j accept toujours autoriser la boucle locale"><code tabindex="0" role="button" title="Cliquer pour copier">iptables -A INPUT -i lo -j ACCEPT</code><span class="d">Toujours autoriser la boucle locale</span></div>
+        <div class="row" data-k="iptables -a input -m state --state established,related -j accept laisser revenir les connexions déjà établies"><code tabindex="0" role="button" title="Cliquer pour copier">iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT</code><span class="d">Laisser revenir les connexions déjà établies</span></div>
+        <div class="row" data-k="iptables -a input -p tcp --dport 22 -j accept ouvrir un port"><code tabindex="0" role="button" title="Cliquer pour copier">iptables -A INPUT -p tcp --dport 22 -j ACCEPT</code><span class="d">Ouvrir un port</span></div>
+        <div class="row" data-k="iptables-save &amp;gt; /etc/iptables/rules.v4 rendre les règles persistantes — iptables-restore &amp;lt; les recharge"><code tabindex="0" role="button" title="Cliquer pour copier">iptables-save &gt; /etc/iptables/rules.v4</code><span class="d">Rendre les règles persistantes — <b>iptables-restore &lt;</b> les recharge</span></div>
+        <div class="sub">Fail2ban</div>
+        <div class="row" data-k="fail2ban-client status sshd voir les ip bannies pour ssh"><code tabindex="0" role="button" title="Cliquer pour copier">fail2ban-client status sshd</code><span class="d">Voir les IP bannies pour SSH</span></div>
+        <div class="row" data-k="fail2ban-client set sshd unbanip 10.0.0.5 débannir une ip (souvent la sienne)"><code tabindex="0" role="button" title="Cliquer pour copier">fail2ban-client set sshd unbanip 10.0.0.5</code><span class="d">Débannir une IP (souvent la sienne)</span></div>
+        <div class="row" data-k="/etc/fail2ban/jail.local configuration : enabled, maxretry, findtime, bantime"><code tabindex="0" role="button" title="Cliquer pour copier">/etc/fail2ban/jail.local</code><span class="d">Configuration : <b>enabled</b>, <b>maxretry</b>, <b>findtime</b>, <b>bantime</b></span></div>
+        <div class="sub">Audit et intégrité</div>
+        <div class="row" data-k="auditctl -w /etc/passwd -p wa -k account_changes surveiller les écritures sur un fichier sensible"><code tabindex="0" role="button" title="Cliquer pour copier">auditctl -w /etc/passwd -p wa -k account_changes</code><span class="d">Surveiller les écritures sur un fichier sensible</span></div>
+        <div class="row" data-k="ausearch -k account_changes rechercher les événements par clé — aureport --summary pour la synthèse"><code tabindex="0" role="button" title="Cliquer pour copier">ausearch -k account_changes</code><span class="d">Rechercher les événements par clé — <b>aureport --summary</b> pour la synthèse</span></div>
+        <div class="row" data-k="aideinit initialiser la base d&#x27;intégrité aide"><code tabindex="0" role="button" title="Cliquer pour copier">aideinit</code><span class="d">Initialiser la base d'intégrité AIDE</span></div>
+        <div class="row" data-k="aide --check comparer le système à la base — --update après un changement légitime"><code tabindex="0" role="button" title="Cliquer pour copier">aide --check</code><span class="d">Comparer le système à la base — <b>--update</b> après un changement légitime</span></div>
+        <div class="sub">Paramètres noyau (sysctl)</div>
+        <div class="row" data-k="sysctl -p appliquer /etc/sysctl.conf"><code tabindex="0" role="button" title="Cliquer pour copier">sysctl -p</code><span class="d">Appliquer /etc/sysctl.conf</span></div>
+        <div class="row" data-k="net.ipv4.tcp_syncookies = 1 protection contre les syn flood"><code tabindex="0" role="button" title="Cliquer pour copier">net.ipv4.tcp_syncookies = 1</code><span class="d">Protection contre les SYN flood</span></div>
+        <div class="row" data-k="net.ipv4.conf.all.rp_filter = 1 filtrage anti-usurpation d&#x27;adresse source"><code tabindex="0" role="button" title="Cliquer pour copier">net.ipv4.conf.all.rp_filter = 1</code><span class="d">Filtrage anti-usurpation d'adresse source</span></div>
+        <div class="row" data-k="net.ipv4.conf.all.accept_redirects = 0 ignorer les redirections icmp — idem send_redirects"><code tabindex="0" role="button" title="Cliquer pour copier">net.ipv4.conf.all.accept_redirects = 0</code><span class="d">Ignorer les redirections ICMP — idem <b>send_redirects</b></span></div>
+        <div class="row" data-k="net.ipv4.ip_forward = 1 activer le routage (nécessaire pour un vpn ou une passerelle)"><code tabindex="0" role="button" title="Cliquer pour copier">net.ipv4.ip_forward = 1</code><span class="d">Activer le routage (nécessaire pour un VPN ou une passerelle)</span></div>
+        <div class="sub">Chiffrement et certificats</div>
+        <div class="row" data-k="gpg --full-gen-key créer une paire de clés gpg"><code tabindex="0" role="button" title="Cliquer pour copier">gpg --full-gen-key</code><span class="d">Créer une paire de clés GPG</span></div>
+        <div class="row" data-k="gpg --armor --output pubkey.txt --export uid exporter sa clé publique — --import pour en ajouter une"><code tabindex="0" role="button" title="Cliquer pour copier">gpg --armor --output pubkey.txt --export UID</code><span class="d">Exporter sa clé publique — <b>--import</b> pour en ajouter une</span></div>
+        <div class="row" data-k="gpg --encrypt --recipient geoff fichier chiffrer pour un destinataire — --decrypt pour déchiffrer"><code tabindex="0" role="button" title="Cliquer pour copier">gpg --encrypt --recipient Geoff fichier</code><span class="d">Chiffrer pour un destinataire — <b>--decrypt</b> pour déchiffrer</span></div>
+        <div class="row" data-k="openssl genrsa -out cle.pem 2048 générer une clé privée rsa"><code tabindex="0" role="button" title="Cliquer pour copier">openssl genrsa -out cle.pem 2048</code><span class="d">Générer une clé privée RSA</span></div>
+        <div class="row" data-k="openssl rsa -in cle.pem -pubout en extraire la clé publique — -text affiche le détail"><code tabindex="0" role="button" title="Cliquer pour copier">openssl rsa -in cle.pem -pubout</code><span class="d">En extraire la clé publique — <b>-text</b> affiche le détail</span></div>
+        <div class="row" data-k="openssl req -new -newkey rsa:2048 -nodes créer une demande de certificat (csr)"><code tabindex="0" role="button" title="Cliquer pour copier">openssl req -new -newkey rsa:2048 -nodes</code><span class="d">Créer une demande de certificat (CSR)</span></div>
+        <div class="row" data-k="certbot --nginx -d monsite.exemple.com obtenir un certificat let&#x27;s encrypt et configurer nginx"><code tabindex="0" role="button" title="Cliquer pour copier">certbot --nginx -d monsite.exemple.com</code><span class="d">Obtenir un certificat Let's Encrypt et configurer Nginx</span></div>
+        <div class="row" data-k="certbot renew --dry-run tester le renouvellement automatique"><code tabindex="0" role="button" title="Cliquer pour copier">certbot renew --dry-run</code><span class="d">Tester le renouvellement automatique</span></div>
+      </div>
+    </section>
+    <section class="grp" id="serveurs" data-n="26">
+      <h2>Serveurs web, bases et partages <span class="cnt">26</span></h2>
+      <p class="lead">Les services montés en TP.</p>
+      <div class="rows">
+        <div class="sub">Apache et LAMP</div>
+        <div class="row" data-k="apt install apache2 php libapache2-mod-php php-mysql installer la pile lamp"><code tabindex="0" role="button" title="Cliquer pour copier">apt install apache2 php libapache2-mod-php php-mysql</code><span class="d">Installer la pile LAMP</span></div>
+        <div class="row" data-k="a2enmod rewrite activer un module — a2dismod le désactive"><code tabindex="0" role="button" title="Cliquer pour copier">a2enmod rewrite</code><span class="d">Activer un module — <b>a2dismod</b> le désactive</span></div>
+        <div class="row" data-k="a2ensite monsite.conf activer un vhost — a2dissite le désactive"><code tabindex="0" role="button" title="Cliquer pour copier">a2ensite monsite.conf</code><span class="d">Activer un vhost — <b>a2dissite</b> le désactive</span></div>
+        <div class="row" data-k="apache2ctl configtest vérifier la configuration — apache2ctl -m liste les modules"><code tabindex="0" role="button" title="Cliquer pour copier">apache2ctl configtest</code><span class="d">Vérifier la configuration — <b>apache2ctl -M</b> liste les modules</span></div>
+        <div class="row" data-k="/etc/apache2/sites-available/ vhosts disponibles ; sites-enabled/ contient les liens actifs"><code tabindex="0" role="button" title="Cliquer pour copier">/etc/apache2/sites-available/</code><span class="d">Vhosts disponibles ; <b>sites-enabled/</b> contient les liens actifs</span></div>
+        <div class="row" data-k="tail -f /var/log/apache2/error.log le premier endroit à regarder quand un site ne répond pas"><code tabindex="0" role="button" title="Cliquer pour copier">tail -f /var/log/apache2/error.log</code><span class="d">Le premier endroit à regarder quand un site ne répond pas</span></div>
+        <div class="sub">Nginx</div>
+        <div class="row" data-k="apt install nginx installer — php-fpm pour servir du php"><code tabindex="0" role="button" title="Cliquer pour copier">apt install nginx</code><span class="d">Installer — <b>php-fpm</b> pour servir du PHP</span></div>
+        <div class="row" data-k="ln -s /etc/nginx/sites-available/monsite /etc/nginx/sites-enabled/ activer un site (pas de a2ensite ici)"><code tabindex="0" role="button" title="Cliquer pour copier">ln -s /etc/nginx/sites-available/monsite /etc/nginx/sites-enabled/</code><span class="d">Activer un site (pas de a2ensite ici)</span></div>
+        <div class="row" data-k="nginx -t &amp;amp;&amp;amp; systemctl reload nginx tester puis recharger : ne jamais recharger sans tester"><code tabindex="0" role="button" title="Cliquer pour copier">nginx -t &amp;&amp; systemctl reload nginx</code><span class="d">Tester puis recharger : ne jamais recharger sans tester</span></div>
+        <div class="row" data-k="rm /etc/nginx/sites-enabled/default retirer le site par défaut"><code tabindex="0" role="button" title="Cliquer pour copier">rm /etc/nginx/sites-enabled/default</code><span class="d">Retirer le site par défaut</span></div>
+        <div class="sub">MySQL / MariaDB</div>
+        <div class="row" data-k="mysql_secure_installation sécuriser l&#x27;installation : mot de passe root, comptes anonymes, base test"><code tabindex="0" role="button" title="Cliquer pour copier">mysql_secure_installation</code><span class="d">Sécuriser l'installation : mot de passe root, comptes anonymes, base test</span></div>
+        <div class="row" data-k="mysql -u root -p se connecter — mariadb -u root -p sur mariadb"><code tabindex="0" role="button" title="Cliquer pour copier">mysql -u root -p</code><span class="d">Se connecter — <b>mariadb -u root -p</b> sur MariaDB</span></div>
+        <div class="row" data-k="mysqldump -u root -p base &amp;gt; sauvegarde.sql sauvegarder une base"><code tabindex="0" role="button" title="Cliquer pour copier">mysqldump -u root -p base &gt; sauvegarde.sql</code><span class="d">Sauvegarder une base</span></div>
+        <div class="row" data-k="mysql -u root -p base &amp;lt; sauvegarde.sql la restaurer"><code tabindex="0" role="button" title="Cliquer pour copier">mysql -u root -p base &lt; sauvegarde.sql</code><span class="d">La restaurer</span></div>
+        <div class="sub">Samba (partage Windows)</div>
+        <div class="row" data-k="apt install samba installer le serveur — smbclient cifs-utils côté client"><code tabindex="0" role="button" title="Cliquer pour copier">apt install samba</code><span class="d">Installer le serveur — <b>smbclient cifs-utils</b> côté client</span></div>
+        <div class="row" data-k="testparm vérifier /etc/samba/smb.conf avant de redémarrer"><code tabindex="0" role="button" title="Cliquer pour copier">testparm</code><span class="d">Vérifier /etc/samba/smb.conf avant de redémarrer</span></div>
+        <div class="row" data-k="smbpasswd -a jean créer le mot de passe samba d&#x27;un utilisateur linux existant"><code tabindex="0" role="button" title="Cliquer pour copier">smbpasswd -a jean</code><span class="d">Créer le mot de passe Samba d'un utilisateur Linux existant</span></div>
+        <div class="row" data-k="smbpasswd -d | -e | -x jean désactiver, réactiver, supprimer un compte samba"><code tabindex="0" role="button" title="Cliquer pour copier">smbpasswd -d | -e | -x jean</code><span class="d">Désactiver, réactiver, supprimer un compte Samba</span></div>
+        <div class="row" data-k="pdbedit -l lister les comptes samba"><code tabindex="0" role="button" title="Cliquer pour copier">pdbedit -L</code><span class="d">Lister les comptes Samba</span></div>
+        <div class="row" data-k="smbclient -l //192.168.1.20 -u jean lister les partages d&#x27;un serveur"><code tabindex="0" role="button" title="Cliquer pour copier">smbclient -L //192.168.1.20 -U jean</code><span class="d">Lister les partages d'un serveur</span></div>
+        <div class="row" data-k="smbstatus voir les connexions en cours"><code tabindex="0" role="button" title="Cliquer pour copier">smbstatus</code><span class="d">Voir les connexions en cours</span></div>
+        <div class="row" data-k="mount -t cifs //192.168.1.20/compta /mnt/compta -o username=jean monter un partage sur un client linux"><code tabindex="0" role="button" title="Cliquer pour copier">mount -t cifs //192.168.1.20/Compta /mnt/compta -o username=jean</code><span class="d">Monter un partage sur un client Linux</span></div>
+        <div class="sub">NFS (partage Unix)</div>
+        <div class="row" data-k="/etc/exports déclaration des partages nfs"><code tabindex="0" role="button" title="Cliquer pour copier">/etc/exports</code><span class="d">Déclaration des partages NFS</span></div>
+        <div class="row" data-k="exportfs -arv recharger et afficher les partages exportés"><code tabindex="0" role="button" title="Cliquer pour copier">exportfs -arv</code><span class="d">Recharger et afficher les partages exportés</span></div>
+        <div class="row" data-k="showmount -e 192.168.1.20 voir ce qu&#x27;un serveur nfs exporte"><code tabindex="0" role="button" title="Cliquer pour copier">showmount -e 192.168.1.20</code><span class="d">Voir ce qu'un serveur NFS exporte</span></div>
+        <div class="row" data-k="mount 192.168.1.20:/srv/nfs/shared /mnt/nfs monter un partage nfs"><code tabindex="0" role="button" title="Cliquer pour copier">mount 192.168.1.20:/srv/nfs/shared /mnt/nfs</code><span class="d">Monter un partage NFS</span></div>
+      </div>
+    </section>
+    <section class="grp" id="audit" data-n="12">
+      <h2>Audit réseau et supervision <span class="cnt">12</span></h2>
+      <p class="lead">Découverte, capture, détection.</p>
+      <div class="rows">
+        <div class="row" data-k="nmap -sn 192.168.1.0/24 découvrir les hôtes actifs sans scanner les ports"><code tabindex="0" role="button" title="Cliquer pour copier">nmap -sn 192.168.1.0/24</code><span class="d">Découvrir les hôtes actifs sans scanner les ports</span></div>
+        <div class="row" data-k="nmap -ss 192.168.1.10 scan syn, discret et rapide"><code tabindex="0" role="button" title="Cliquer pour copier">nmap -sS 192.168.1.10</code><span class="d">Scan SYN, discret et rapide</span></div>
+        <div class="row" data-k="nmap -sv -o 192.168.1.10 identifier services et système d&#x27;exploitation"><code tabindex="0" role="button" title="Cliquer pour copier">nmap -sV -O 192.168.1.10</code><span class="d">Identifier services et système d'exploitation</span></div>
+        <div class="row" data-k="nmap -p- 192.168.1.10 scanner les 65 535 ports"><code tabindex="0" role="button" title="Cliquer pour copier">nmap -p- 192.168.1.10</code><span class="d">Scanner les 65 535 ports</span></div>
+        <div class="row" data-k="nmap -a 192.168.1.10 scan complet et bavard"><code tabindex="0" role="button" title="Cliquer pour copier">nmap -A 192.168.1.10</code><span class="d">Scan complet et bavard</span></div>
+        <div class="row" data-k="nmap -il targets.txt -sv scanner une liste de cibles"><code tabindex="0" role="button" title="Cliquer pour copier">nmap -iL targets.txt -sV</code><span class="d">Scanner une liste de cibles</span></div>
+        <div class="row" data-k="tshark -r capture.pcap -y dns -t fields -e dns.qry.name | sort -u extraire les noms dns demandés d&#x27;une capture"><code tabindex="0" role="button" title="Cliquer pour copier">tshark -r capture.pcap -Y dns -T fields -e dns.qry.name | sort -u</code><span class="d">Extraire les noms DNS demandés d'une capture</span></div>
+        <div class="row" data-k="filebeat modules enable system activer la collecte des logs système vers la stack elk"><code tabindex="0" role="button" title="Cliquer pour copier">filebeat modules enable system</code><span class="d">Activer la collecte des logs système vers la stack ELK</span></div>
+        <div class="row" data-k="git clone https://github.com/sigmahq/sigma.git récupérer les règles de détection sigma"><code tabindex="0" role="button" title="Cliquer pour copier">git clone https://github.com/SigmaHQ/sigma.git</code><span class="d">Récupérer les règles de détection Sigma</span></div>
+        <div class="row" data-k="curl -k -u elastic https://localhost:9200 vérifier qu&#x27;elasticsearch répond"><code tabindex="0" role="button" title="Cliquer pour copier">curl -k -u elastic https://localhost:9200</code><span class="d">Vérifier qu'Elasticsearch répond</span></div>
+        <div class="row" data-k="tail -f /var/log/centreon-engine/centreon-engine.log suivre le moteur de supervision centreon"><code tabindex="0" role="button" title="Cliquer pour copier">tail -f /var/log/centreon-engine/centreon-engine.log</code><span class="d">Suivre le moteur de supervision Centreon</span></div>
+        <div class="sub">Rappel légal</div>
+        <div class="row" data-k="autorisation écrite un scan ou une capture ne se fait que sur un système dont on est responsable, ou avec un mandat écrit."><code tabindex="0" role="button" title="Cliquer pour copier">Autorisation écrite</code><span class="d">Un scan ou une capture ne se fait que sur un système dont on est responsable, ou avec un mandat écrit.</span></div>
+      </div>
+    </section>
+    <section class="grp" id="virtu" data-n="18">
+      <h2>Conteneurs, VM et VPN <span class="cnt">18</span></h2>
+      <p class="lead">Docker, Proxmox, WireGuard, OpenVPN.</p>
+      <div class="rows">
+        <div class="sub">Docker</div>
+        <div class="row" data-k="curl -fssl https://get.docker.com | sudo sh installation par le script officiel"><code tabindex="0" role="button" title="Cliquer pour copier">curl -fsSL https://get.docker.com | sudo sh</code><span class="d">Installation par le script officiel</span></div>
+        <div class="row" data-k="usermod -ag docker $user utiliser docker sans sudo (déconnexion/reconnexion nécessaire)"><code tabindex="0" role="button" title="Cliquer pour copier">usermod -aG docker $USER</code><span class="d">Utiliser docker sans sudo (déconnexion/reconnexion nécessaire)</span></div>
+        <div class="row" data-k="docker ps conteneurs en cours — docker images liste les images"><code tabindex="0" role="button" title="Cliquer pour copier">docker ps</code><span class="d">Conteneurs en cours — <b>docker images</b> liste les images</span></div>
+        <div class="row" data-k="docker start | stop web démarrer, arrêter un conteneur"><code tabindex="0" role="button" title="Cliquer pour copier">docker start | stop web</code><span class="d">Démarrer, arrêter un conteneur</span></div>
+        <div class="row" data-k="docker rm -f web supprimer un conteneur, même en fonctionnement"><code tabindex="0" role="button" title="Cliquer pour copier">docker rm -f web</code><span class="d">Supprimer un conteneur, même en fonctionnement</span></div>
+        <div class="row" data-k="docker login s&#x27;authentifier auprès d&#x27;un registre"><code tabindex="0" role="button" title="Cliquer pour copier">docker login</code><span class="d">S'authentifier auprès d'un registre</span></div>
+        <div class="sub">Proxmox VE</div>
+        <div class="row" data-k="qm list lister les machines virtuelles"><code tabindex="0" role="button" title="Cliquer pour copier">qm list</code><span class="d">Lister les machines virtuelles</span></div>
+        <div class="row" data-k="qm start | stop 100 démarrer, arrêter la vm 100"><code tabindex="0" role="button" title="Cliquer pour copier">qm start | stop 100</code><span class="d">Démarrer, arrêter la VM 100</span></div>
+        <div class="row" data-k="qm snapshot 100 avant-maj prendre un instantané avant une opération risquée"><code tabindex="0" role="button" title="Cliquer pour copier">qm snapshot 100 avant-maj</code><span class="d">Prendre un instantané avant une opération risquée</span></div>
+        <div class="row" data-k="vzdump 100 --storage local-nfs --mode snapshot sauvegarder une vm sans l&#x27;arrêter"><code tabindex="0" role="button" title="Cliquer pour copier">vzdump 100 --storage local-nfs --mode snapshot</code><span class="d">Sauvegarder une VM sans l'arrêter</span></div>
+        <div class="row" data-k="pvesh get /nodes interroger l&#x27;api proxmox en ligne de commande"><code tabindex="0" role="button" title="Cliquer pour copier">pvesh get /nodes</code><span class="d">Interroger l'API Proxmox en ligne de commande</span></div>
+        <div class="sub">WireGuard</div>
+        <div class="row" data-k="wg genkey | tee privatekey | wg pubkey &amp;gt; publickey générer la paire de clés en une commande"><code tabindex="0" role="button" title="Cliquer pour copier">wg genkey | tee privatekey | wg pubkey &gt; publickey</code><span class="d">Générer la paire de clés en une commande</span></div>
+        <div class="row" data-k="wg show état des pairs et des poignées de main"><code tabindex="0" role="button" title="Cliquer pour copier">wg show</code><span class="d">État des pairs et des poignées de main</span></div>
+        <div class="row" data-k="wg-quick up ./client.conf monter le tunnel — down pour le couper"><code tabindex="0" role="button" title="Cliquer pour copier">wg-quick up ./client.conf</code><span class="d">Monter le tunnel — <b>down</b> pour le couper</span></div>
+        <div class="row" data-k="ufw allow 51820/udp ouvrir le port wireguard sur le pare-feu"><code tabindex="0" role="button" title="Cliquer pour copier">ufw allow 51820/udp</code><span class="d">Ouvrir le port WireGuard sur le pare-feu</span></div>
+        <div class="sub">OpenVPN</div>
+        <div class="row" data-k="openvpn --config client.ovpn se connecter avec un profil client"><code tabindex="0" role="button" title="Cliquer pour copier">openvpn --config client.ovpn</code><span class="d">Se connecter avec un profil client</span></div>
+        <div class="row" data-k="journalctl -u openvpn-server@server -f suivre les connexions côté serveur"><code tabindex="0" role="button" title="Cliquer pour copier">journalctl -u openvpn-server@server -f</code><span class="d">Suivre les connexions côté serveur</span></div>
+        <div class="row" data-k="ufw allow 1194/udp ouvrir le port openvpn"><code tabindex="0" role="button" title="Cliquer pour copier">ufw allow 1194/udp</code><span class="d">Ouvrir le port OpenVPN</span></div>
+      </div>
+    </section>
+
+  <p class="empty">Aucune commande ne correspond à cette recherche.</p>
+
+  <footer>Relevé à partir des documents de formation — vérifier chaque commande avant de l'exécuter sur un système en production.</footer>
+</div>
+
+<script>
+(function () {
+  var q = document.getElementById('q');
+  var rows = [].slice.call(document.querySelectorAll('.row'));
+  var groups = [].slice.call(document.querySelectorAll('.grp'));
+  var sub = document.querySelector('.sub-h');
+  var subFull = sub.textContent;
+  var norm = function (s) { return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''); };
+  rows.forEach(function (r) { r.dataset.n = norm(r.dataset.k); });
+
+  function run() {
+    var terms = norm(q.value).split(/\s+/).filter(Boolean);
+    var hits = 0;
+    rows.forEach(function (r) {
+      var ok = terms.every(function (t) { return r.dataset.n.indexOf(t) > -1; });
+      r.style.display = ok ? '' : 'none';
+      if (ok) hits++;
+    });
+    groups.forEach(function (g) {
+      var n = 0;
+      [].slice.call(g.querySelectorAll('.row')).forEach(function (r) { if (r.style.display !== 'none') n++; });
+      g.style.display = n ? '' : 'none';
+      g.querySelector('.cnt').textContent = terms.length ? n : g.dataset.n;
+      var node = g.querySelector('.rows').firstElementChild, seen = null;
+      var subs = [];
+      while (node) {
+        if (node.classList.contains('sub')) { seen = node; seen.dataset.v = '0'; subs.push(seen); }
+        else if (seen && node.style.display !== 'none') { seen.dataset.v = '1'; }
+        node = node.nextElementSibling;
+      }
+      subs.forEach(function (s) { s.style.display = s.dataset.v === '1' ? '' : 'none'; });
+    });
+    sub.textContent = terms.length
+      ? (hits + (hits > 1 ? ' commandes trouvées' : ' commande trouvée'))
+      : subFull;
+    document.body.classList.toggle('no-hit', hits === 0);
+  }
+
+  q.addEventListener('input', run);
+  q.addEventListener('keydown', function (e) { if (e.key === 'Escape') { q.value = ''; run(); } });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === '/' && document.activeElement !== q) { e.preventDefault(); q.focus(); }
+  });
+
+  function copy(el) {
+    var txt = el.textContent;
+    var done = function () {
+      el.classList.add('copied');
+      setTimeout(function () { el.classList.remove('copied'); }, 900);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(txt).then(done, function () { fallback(txt, done); });
+    } else { fallback(txt, done); }
+  }
+  function fallback(txt, done) {
+    try {
+      var ta = document.createElement('textarea');
+      ta.value = txt; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select(); document.execCommand('copy');
+      document.body.removeChild(ta); done();
+    } catch (e) { /* rien à faire */ }
+  }
+  document.addEventListener('click', function (e) {
+    if (e.target.tagName === 'CODE' && e.target.closest('.row')) copy(e.target);
+  });
+  document.addEventListener('keydown', function (e) {
+    if ((e.key === 'Enter' || e.key === ' ') && e.target.tagName === 'CODE' && e.target.closest('.row')) {
+      e.preventDefault(); copy(e.target);
+    }
+  });
+
+  run();
+})();
+</script>
+</body>
+</html>
