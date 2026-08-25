@@ -55,21 +55,56 @@
     color: #7f1d1d; font-size: 14px; margin: 12px 0;
   }
   .warn strong { color: #991b1b; }
+  .note {
+    background: #ecfeff; border-left: 4px solid #0891b2;
+    padding: 10px 14px; border-radius: 4px;
+    color: #164e63; font-size: 14px; margin: 12px 0;
+  }
+  .note strong { color: #0e7490; }
+  .vers {
+    color: #64748b; font-size: 13px; margin: -14px 0 22px;
+  }
+  table.diff {
+    width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13.5px;
+  }
+  table.diff th, table.diff td {
+    text-align: left; padding: 7px 10px; border-bottom: 1px solid #e2e8f0; vertical-align: top;
+  }
+  table.diff th { color: #0e7490; font-size: 12px; text-transform: uppercase; letter-spacing: 0.6px; }
+  table.diff td:first-child { color: #64748b; white-space: nowrap; }
 </style>
 </head>
 <body>
 
-<span class="cat">DEBIAN &middot; APPLICATION WEB</span>
-<h1>Installation de GLPI sur Debian</h1>
+<span class="cat">DEBIAN 13 &middot; APPLICATION WEB</span>
+<h1>Installation de GLPI 11 sur Debian 13</h1>
+<p class="vers">Vérifié le 25/08/2026 &mdash; GLPI <strong>11.0.8</strong> sur Debian <strong>13 « Trixie »</strong> (PHP 8.4, MariaDB). GLPI 11 exige PHP 8.2 minimum ; Debian 13 fournit PHP 8.4, qui convient.</p>
+
+<div class="note">
+<strong>Ce qui change depuis GLPI 10</strong> — trois points font échouer l'ancienne procédure :
+<table class="diff">
+<tr><th>Point</th><th>GLPI 10</th><th>GLPI 11</th></tr>
+<tr><td>Racine web</td><td>le dossier <code class="i">glpi/</code></td><td>obligatoirement <code class="i">glpi/public/</code></td></tr>
+<tr><td>Extension PHP</td><td>—</td><td><code class="i">bcmath</code> devient obligatoire</td></tr>
+<tr><td>Commande console</td><td><code class="i">glpi:system:check_requirements</code></td><td><code class="i">system:check_requirements</code></td></tr>
+</table>
+</div>
 
 <h3>Phase 1 — Serveur LAMP</h3>
 
 <h2><span class="n">1</span>Mettre à jour le système</h2>
 <pre><span class="k">sudo</span> apt update &amp;&amp; <span class="k">sudo</span> apt upgrade -y</pre>
 
-<h2><span class="n">2</span>Installer Apache, MariaDB, PHP + modules</h2>
-<pre><span class="k">sudo</span> apt install -y apache2 mariadb-server \
-  php php-{mysql,curl,gd,intl,mbstring,xml,zip,bz2,ldap,apcu,xmlrpc,cas}</pre>
+<h2><span class="n">2</span>Installer Apache, MariaDB, PHP et les extensions</h2>
+<pre><span class="k">sudo</span> apt install -y apache2 mariadb-server libapache2-mod-php \
+  php php-cli php-mysql php-curl php-gd php-intl php-mbstring \
+  php-xml php-bcmath php-zip php-bz2 php-ldap php-opcache</pre>
+<p>Vérifier que tout est chargé :</p>
+<pre>php -m | grep -E <span class="s">'mysqli|curl|gd|intl|mbstring|bcmath|zlib|openssl|dom'</span></pre>
+<div class="note">
+<strong>Pièges de nommage.</strong> Le paquet est <code class="i">php-mysql</code> — il fournit à la fois <em>mysqli</em> et <em>pdo_mysql</em>. Le paquet <code class="i">php-mysqli</code> n'existe pas, et une seule mauvaise entrée fait échouer toute la commande <code class="i">apt install</code>. De même, <code class="i">php-xmlrpc</code> a disparu : l'extension a été sortie du cœur de PHP 8.<br>
+Sur Debian 13, les paquets <code class="i">php-*</code> pointent vers PHP 8.4. Écrire <code class="i">php8.4-mysql</code> revient au même, et n'est utile que si plusieurs versions de PHP cohabitent.
+</div>
 
 <h3>Phase 2 — Base de données</h3>
 
@@ -78,7 +113,7 @@
 <p>Répondre <strong>Y</strong> à toutes les questions de sécurité et définir un mot de passe root.</p>
 
 <h2><span class="n">4</span>Créer la base et l'utilisateur GLPI</h2>
-<pre><span class="k">sudo</span> mysql -u root -p</pre>
+<pre><span class="k">sudo</span> mariadb -u root -p</pre>
 <p>À l'invite <code class="i">MariaDB [(none)]&gt;</code> :</p>
 <pre><span class="s">CREATE DATABASE</span> glpidb <span class="s">CHARACTER SET</span> utf8mb4 <span class="s">COLLATE</span> utf8mb4_unicode_ci;
 <span class="s">CREATE USER</span> 'glpiuser'@'localhost' <span class="s">IDENTIFIED BY</span> 'MotDePasseFort';
@@ -86,43 +121,94 @@
 <span class="s">FLUSH PRIVILEGES</span>;
 <span class="s">EXIT</span>;</pre>
 
-<h2><span class="n">5</span>Activer les fuseaux horaires (requis par GLPI 10)</h2>
-<pre><span class="k">sudo</span> mysql_tzinfo_to_sql /usr/share/zoneinfo | <span class="k">sudo</span> mysql -u root -p mysql
+<h2><span class="n">5</span>Charger les fuseaux horaires dans MariaDB</h2>
+<pre><span class="k">sudo</span> mysql_tzinfo_to_sql /usr/share/zoneinfo | <span class="k">sudo</span> mariadb mysql
 
-<span class="k">sudo</span> mysql -u root -p -e \
-  "GRANT SELECT ON mysql.time_zone_name TO 'glpiuser'@'localhost'; FLUSH PRIVILEGES;"</pre>
+<span class="k">sudo</span> mariadb -e \
+  <span class="s">"GRANT SELECT ON mysql.time_zone_name TO 'glpiuser'@'localhost'; FLUSH PRIVILEGES;"</span></pre>
+<p>Sans cette étape, GLPI signale les fuseaux horaires comme non disponibles et l'étape 12 échoue.</p>
 
-<h3>Phase 3 — GLPI</h3>
+<h3>Phase 3 — Déploiement de GLPI</h3>
 
-<h2><span class="n">6</span>Télécharger et extraire GLPI</h2>
+<h2><span class="n">6</span>Télécharger et extraire GLPI 11</h2>
 <pre><span class="k">cd</span> /tmp
-wget https://github.com/glpi-project/glpi/releases/download/10.0.15/glpi-10.0.15.tgz
-tar -xvzf glpi-10.0.15.tgz
-<span class="k">sudo</span> mv glpi /var/www/html/</pre>
-<p>Vérifier la dernière version sur <em>github.com/glpi-project/glpi/releases</em>.</p>
+wget https://github.com/glpi-project/glpi/releases/download/11.0.8/glpi-11.0.8.tgz
+<span class="k">sudo</span> tar -xzf glpi-11.0.8.tgz -C /var/www/html/</pre>
+<p>L'archive crée <code class="i">/var/www/html/glpi</code>. Vérifier la dernière version sur <em>github.com/glpi-project/glpi/releases</em> — la branche 10 s'arrête à 10.0.26 et n'évolue plus qu'en correctifs.</p>
+<div class="note">
+La documentation officielle place plutôt GLPI dans <code class="i">/var/www/glpi</code>, hors de la racine web par défaut. Les deux fonctionnent : ce qui compte, c'est que le <em>DocumentRoot</em> pointe sur le sous-dossier <code class="i">public</code> et sur rien d'autre.
+</div>
 
 <h2><span class="n">7</span>Attribuer les droits à Apache</h2>
 <pre><span class="k">sudo</span> chown -R www-data:www-data /var/www/html/glpi
-<span class="k">sudo</span> chmod -R 755 /var/www/html/glpi</pre>
+<span class="k">sudo</span> find /var/www/html/glpi -type d -exec chmod 755 {} \;
+<span class="k">sudo</span> find /var/www/html/glpi -type f -exec chmod 644 {} \;
+<span class="k">sudo</span> chmod -R 775 /var/www/html/glpi/files</pre>
+<p>Les dossiers <code class="i">files</code> et <code class="i">config</code> doivent être inscriptibles par le serveur web ; le reste reste en lecture seule.</p>
 
-<h2><span class="n">8</span>Redémarrer Apache + activer au démarrage</h2>
-<pre><span class="k">sudo</span> systemctl restart apache2
+<h3>Phase 4 — VirtualHost Apache</h3>
+
+<h2><span class="n">8</span>Créer le VirtualHost pointant sur <em>public</em></h2>
+<pre><span class="k">sudo</span> nano /etc/apache2/sites-available/glpi.conf</pre>
+<pre><span class="s">&lt;VirtualHost *:80&gt;</span>
+    ServerName glpi.local
+    DocumentRoot /var/www/html/glpi/public
+
+    <span class="s">&lt;Directory /var/www/html/glpi/public&gt;</span>
+        Require all granted
+        AllowOverride All
+
+        RewriteEngine On
+        RewriteCond %{HTTP:Authorization} ^(.+)$
+        RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+        RewriteCond %{REQUEST_FILENAME} !-f
+        RewriteRule ^(.*)$ index.php [QSA,L]
+    <span class="s">&lt;/Directory&gt;</span>
+
+    ErrorLog ${APACHE_LOG_DIR}/glpi_error.log
+    CustomLog ${APACHE_LOG_DIR}/glpi_access.log combined
+<span class="s">&lt;/VirtualHost&gt;</span></pre>
+<div class="warn">
+<strong>Le point critique de GLPI 11.</strong> L'archive ne contient <em>aucun</em> fichier <code class="i">.htaccess</code> dans <code class="i">public/</code> : les règles de réécriture doivent figurer dans le VirtualHost. Sans elles, la page d'accueil s'affiche mais toute la navigation renvoie des erreurs 404.
+</div>
+
+<h2><span class="n">9</span>Activer le site et le module rewrite</h2>
+<pre><span class="k">sudo</span> a2enmod rewrite
+<span class="k">sudo</span> a2dissite 000-default.conf
+<span class="k">sudo</span> a2ensite glpi.conf
+<span class="k">sudo</span> apache2ctl configtest
+<span class="k">sudo</span> systemctl reload apache2
 <span class="k">sudo</span> systemctl enable apache2 mariadb</pre>
 
-<h3>Phase 4 — Assistant Web</h3>
+<h3>Phase 5 — Installation de GLPI</h3>
 
-<h2><span class="n">9</span>Lancer l'installation navigateur</h2>
-<p>Ouvrir : <code class="i">http://IP_SERVEUR/glpi</code></p>
-<pre>Serveur SQL    : localhost
-Utilisateur    : glpiuser
-Mot de passe   : MotDePasseFort
-Base de données: glpidb</pre>
+<h2><span class="n">10</span>Vérifier les prérequis</h2>
+<pre><span class="k">cd</span> /var/www/html/glpi
+<span class="k">sudo</span> -u www-data php bin/console system:check_requirements</pre>
+<p>Le rapport liste chaque extension manquante et chaque droit insuffisant : c'est le contrôle à passer avant d'aller plus loin.</p>
+<div class="note">
+En GLPI 10 la commande s'appelait <code class="i">glpi:system:check_requirements</code>. Le préfixe <code class="i">glpi:</code> a disparu en version 11 — un ancien script d'installation échoue donc silencieusement sur cette ligne.
+</div>
+
+<h2><span class="n">11</span>Installer la base en ligne de commande</h2>
+<pre><span class="k">sudo</span> -u www-data php bin/console db:install \
+  --db-host=localhost \
+  --db-name=glpidb \
+  --db-user=glpiuser \
+  --db-password=<span class="s">'MotDePasseFort'</span> \
+  --default-language=fr_FR \
+  --no-interaction</pre>
+<p>Variante navigateur : ouvrir <code class="i">http://IP_SERVEUR/</code> — la racine du site, et non plus <code class="i">/glpi</code>, puisque le VirtualHost pointe déjà sur <code class="i">public</code>.</p>
 <p>Comptes créés par défaut : <strong>glpi/glpi</strong>, tech/tech, normal/normal, post-only/postonly.</p>
 
-<h3>Phase 5 — Sécurisation obligatoire</h3>
+<h2><span class="n">12</span>Activer les fuseaux horaires dans GLPI</h2>
+<pre><span class="k">sudo</span> -u www-data php bin/console db:enable_timezones</pre>
 
-<h2><span class="n">10</span>Supprimer le fichier d'installation</h2>
-<pre><span class="k">sudo</span> rm /var/www/html/glpi/install/install.php</pre>
+<h3>Phase 6 — Sécurisation obligatoire</h3>
+
+<h2><span class="n">13</span>Supprimer le dossier d'installation</h2>
+<pre><span class="k">sudo</span> rm -rf /var/www/html/glpi/install</pre>
+<p>Le dossier <code class="i">install/</code> est toujours présent dans l'archive 11.0.8 : il reste à supprimer une fois l'installation validée.</p>
 
 <div class="warn">
 <strong>CRITIQUE</strong> — Modifier immédiatement le mot de passe des <strong>4 comptes par défaut</strong> depuis <em>Administration → Utilisateurs</em>. Ces identifiants sont publics.
